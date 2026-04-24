@@ -23,8 +23,74 @@ import {
   UtensilsCrossed,
   Cpu,
   ChevronLeft,
+  Zap,
+  Heart,
+  Infinity as InfinityIcon,
+  Crown,
+  TrendingUp,
+  Skull,
+  BrainCog,
+  GraduationCap,
+  Timer,
+  Flame,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
+
+type PlayMode = {
+  id: string;
+  title: string;
+  hint: string;
+  icon: typeof Trophy;
+};
+
+type ModeGroup = {
+  id: string;
+  label: string;
+  badge: string;
+  badgeVariant: "default" | "secondary" | "destructive" | "outline";
+  modes: [PlayMode, PlayMode, PlayMode, PlayMode];
+};
+
+const modeGroups: ModeGroup[] = [
+  {
+    id: "popular",
+    label: "مشهور",
+    badge: "🔥 الأكتر لعب",
+    badgeVariant: "default",
+    modes: [
+      { id: "classic", title: "كلاسيكي", hint: "10 أسئلة، وقت عادي", icon: Sparkles },
+      { id: "blitz", title: "البرق", hint: "7 ثواني لكل سؤال", icon: Zap },
+      { id: "hearts", title: "القلوب", hint: "3 أرواح بس - خد بالك", icon: Heart },
+      { id: "endless", title: "لا نهاية", hint: "العب لحد ما تغلط", icon: InfinityIcon },
+    ],
+  },
+  {
+    id: "challenge",
+    label: "تحدي",
+    badge: "💪 للأبطال",
+    badgeVariant: "destructive",
+    modes: [
+      { id: "perfect", title: "الكمال", hint: "صفر أخطاء أو الخسارة", icon: Crown },
+      { id: "ascend", title: "التصاعد", hint: "الصعوبة بتزيد كل سؤال", icon: TrendingUp },
+      { id: "one-shot", title: "ضربة واحدة", hint: "غلطة واحدة = خروج", icon: Skull },
+      { id: "memory", title: "الذاكرة", hint: "احفظ السؤال بسرعة", icon: BrainCog },
+    ],
+  },
+  {
+    id: "custom",
+    label: "مخصص",
+    badge: "⚙️ على مزاجك",
+    badgeVariant: "secondary",
+    modes: [
+      { id: "easy-5", title: "سهل", hint: "5 أسئلة - ابتدائي", icon: GraduationCap },
+      { id: "hard-15", title: "صعب", hint: "15 سؤال - للمحترفين", icon: Flame },
+      { id: "study", title: "مذاكرة", hint: "بدون وقت + شرح الإجابة", icon: BookOpen },
+      { id: "marathon", title: "ماراثون", hint: "20 سؤال - تحدي طويل", icon: Timer },
+    ],
+  },
+];
+
 
 type SubBranch = {
   id: string;
@@ -222,11 +288,21 @@ const categories: Category[] = [
 
 const Play = () => {
   const [selected, setSelected] = useState<Category | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState<SubBranch | null>(null);
 
-  const handleBranch = (cat: Category, branch: SubBranch) => {
-    toast.info("التفرع ده هيتفعّل في المرحلة الجاية 🔓", {
-      description: `${cat.title} - ${branch.title}`,
+  const handleBranch = (branch: SubBranch) => {
+    setSelectedBranch(branch);
+  };
+
+  const handleMode = (mode: PlayMode) => {
+    toast.info("الوضع ده هيتفعّل لما نضيف الأسئلة 🎮", {
+      description: `${selected?.title} - ${selectedBranch?.title} - ${mode.title}`,
     });
+  };
+
+  const closeAll = () => {
+    setSelectedBranch(null);
+    setSelected(null);
   };
 
   return (
@@ -321,7 +397,7 @@ const Play = () => {
                 {selected.branches.map((branch, idx) => (
                   <button
                     key={branch.id}
-                    onClick={() => handleBranch(selected, branch)}
+                    onClick={() => handleBranch(branch)}
                     className="text-right group"
                   >
                     <Card
@@ -349,8 +425,86 @@ const Play = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Play modes dialog */}
+      <Dialog open={!!selectedBranch} onOpenChange={(open) => !open && setSelectedBranch(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          {selected && selectedBranch && (
+            <>
+              <DialogHeader className="text-right">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 ring-1 ring-primary/20">
+                    <selected.icon className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <DialogTitle className="text-xl md:text-2xl font-extrabold">
+                      {selected.title} <span className="text-primary">·</span> {selectedBranch.title}
+                    </DialogTitle>
+                    <DialogDescription className="text-sm">
+                      اختار وضع اللعب اللي يناسبك دلوقتي
+                    </DialogDescription>
+                  </div>
+                </div>
+              </DialogHeader>
+
+              <div className="space-y-6 mt-4">
+                {modeGroups.map((group) => (
+                  <div key={group.id} className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-extrabold">{group.label}</h3>
+                      <Badge variant={group.badgeVariant} className="text-[10px]">
+                        {group.badge}
+                      </Badge>
+                      <div className="flex-1 h-px bg-border/50" />
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                      {group.modes.map((mode) => {
+                        const ModeIcon = mode.icon;
+                        return (
+                          <button
+                            key={mode.id}
+                            onClick={() => handleMode(mode)}
+                            className="text-right group"
+                          >
+                            <Card
+                              className={`border-primary/10 bg-gradient-to-br ${selected.gradient} backdrop-blur-sm transition-bounce hover:border-primary/40 hover:shadow-elevated hover:-translate-y-0.5 h-full`}
+                            >
+                              <CardContent className="p-3 space-y-2">
+                                <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 ring-1 ring-primary/20 group-hover:scale-110 transition-bounce">
+                                  <ModeIcon className="h-4 w-4 text-primary" />
+                                </div>
+                                <div className="space-y-0.5">
+                                  <h4 className="text-sm font-bold leading-tight">
+                                    {mode.title}
+                                  </h4>
+                                  <p className="text-[10px] text-muted-foreground leading-snug">
+                                    {mode.hint}
+                                  </p>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+
+                <button
+                  onClick={closeAll}
+                  className="w-full text-xs text-muted-foreground hover:text-foreground transition-smooth py-2"
+                >
+                  ← رجوع لاختيار فئة تانية
+                </button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
 export default Play;
+
