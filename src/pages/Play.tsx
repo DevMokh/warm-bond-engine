@@ -534,6 +534,18 @@ const Play = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Quiz player */}
+      {activeMode && selected && selectedBranch && (
+        <QuizPlayer
+          open={!!activeMode}
+          onClose={closeQuiz}
+          modeId={activeMode.modeId}
+          categoryId={activeMode.categoryId}
+          categoryTitle={selected.title}
+          branchTitle={selectedBranch.title}
+        />
+      )}
     </div>
   );
 };
