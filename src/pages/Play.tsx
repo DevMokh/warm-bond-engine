@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +36,15 @@ import {
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { QuizPlayer } from "@/components/QuizPlayer";
+
+// Map UI category slugs to DB category slugs (when names differ)
+const CATEGORY_SLUG_MAP: Record<string, string> = {
+  religion: "religion",
+  // these UI-only categories don't have a DB match yet:
+  // space, puzzles, movies, celebrities, food
+};
 
 type PlayMode = {
   id: string;
@@ -289,15 +298,38 @@ const categories: Category[] = [
 const Play = () => {
   const [selected, setSelected] = useState<Category | null>(null);
   const [selectedBranch, setSelectedBranch] = useState<SubBranch | null>(null);
+  const [activeMode, setActiveMode] = useState<{ modeId: string; categoryId: string } | null>(null);
+  const [dbCategories, setDbCategories] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    supabase.from("categories").select("id, slug").then(({ data }) => {
+      if (data) {
+        const map: Record<string, string> = {};
+        data.forEach((c) => { map[c.slug] = c.id; });
+        setDbCategories(map);
+      }
+    });
+  }, []);
 
   const handleBranch = (branch: SubBranch) => {
     setSelectedBranch(branch);
   };
 
   const handleMode = (mode: PlayMode) => {
-    toast.info("الوضع ده هيتفعّل لما نضيف الأسئلة 🎮", {
-      description: `${selected?.title} - ${selectedBranch?.title} - ${mode.title}`,
-    });
+    if (!selected) return;
+    const dbSlug = CATEGORY_SLUG_MAP[selected.id] ?? selected.id;
+    const categoryId = dbCategories[dbSlug];
+    if (!categoryId) {
+      toast.error("الفئة دي لسه مفيهاش أسئلة في قاعدة البيانات", {
+        description: "الأدمن لازم يضيف فئة بالـ slug ده الأول",
+      });
+      return;
+    }
+    setActiveMode({ modeId: mode.id, categoryId });
+  };
+
+  const closeQuiz = () => {
+    setActiveMode(null);
   };
 
   const closeAll = () => {
@@ -502,6 +534,18 @@ const Play = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Quiz player */}
+      {activeMode && selected && selectedBranch && (
+        <QuizPlayer
+          open={!!activeMode}
+          onClose={closeQuiz}
+          modeId={activeMode.modeId}
+          categoryId={activeMode.categoryId}
+          categoryTitle={selected.title}
+          branchTitle={selectedBranch.title}
+        />
+      )}
     </div>
   );
 };
