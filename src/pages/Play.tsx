@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +36,15 @@ import {
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { QuizPlayer } from "@/components/QuizPlayer";
+
+// Map UI category slugs to DB category slugs (when names differ)
+const CATEGORY_SLUG_MAP: Record<string, string> = {
+  religion: "religion",
+  // these UI-only categories don't have a DB match yet:
+  // space, puzzles, movies, celebrities, food
+};
 
 type PlayMode = {
   id: string;
