@@ -1,14 +1,28 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Brain, Home, Trophy, User, LogOut, Gamepad2 } from "lucide-react";
+import { Brain, Home, Trophy, User, LogOut, Gamepad2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Navbar = () => {
   const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!user) { setIsAdmin(false); return; }
+    supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle()
+      .then(({ data }) => setIsAdmin(!!data));
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -21,6 +35,7 @@ export const Navbar = () => {
     { to: "/play", label: "العب", icon: Gamepad2 },
     { to: "/leaderboard", label: "الصدارة", icon: Trophy },
     { to: "/profile", label: "البروفايل", icon: User },
+    ...(isAdmin ? [{ to: "/admin", label: "أدمن", icon: ShieldCheck }] : []),
   ];
 
   return (
