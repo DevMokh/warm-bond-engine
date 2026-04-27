@@ -182,11 +182,4 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--primary));
-
-   /* إخفاء أي أثر لزر Lovable */
-#lovable-edit-button,
-[data-lovable],
-[class*="lovable"] {
-  display: none !important;
-}
 }
