@@ -87,7 +87,7 @@ const Matches = () => {
       .from("questions")
       .select("id")
       .eq("category_id", form.category_id)
-      .eq("difficulty", form.difficulty)
+      .eq("difficulty", form.difficulty as "easy" | "medium" | "hard")
       .eq("is_active", true)
       .limit(form.questions_count * 3);
 
