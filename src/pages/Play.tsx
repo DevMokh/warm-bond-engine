@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navbar } from "@/components/Navbar";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -339,7 +339,7 @@ const Play = () => {
 
   return (
     <div className="min-h-screen pb-20 md:pb-8">
-      <Navbar />
+      
       <div className="container py-8 md:py-12">
         {/* Header */}
         <div className="text-center mb-8 md:mb-12 space-y-3">

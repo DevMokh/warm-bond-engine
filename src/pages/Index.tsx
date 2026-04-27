@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Brain, Gamepad2, Trophy, Sparkles, Calendar, Users, Zap, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Navbar } from "@/components/Navbar";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -57,7 +57,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen pb-20 md:pb-0">
-      <Navbar />
+      
 
       {/* Hero */}
       <section className="container py-12 md:py-20">
