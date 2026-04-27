@@ -83,6 +83,33 @@ export type Database = {
         }
         Relationships: []
       }
+      friendships: {
+        Row: {
+          addressee_id: string
+          created_at: string
+          id: string
+          requester_id: string
+          status: Database["public"]["Enums"]["friendship_status"]
+          updated_at: string
+        }
+        Insert: {
+          addressee_id: string
+          created_at?: string
+          id?: string
+          requester_id: string
+          status?: Database["public"]["Enums"]["friendship_status"]
+          updated_at?: string
+        }
+        Update: {
+          addressee_id?: string
+          created_at?: string
+          id?: string
+          requester_id?: string
+          status?: Database["public"]["Enums"]["friendship_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       game_sessions: {
         Row: {
           category_id: string | null
@@ -126,6 +153,68 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "game_sessions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matches: {
+        Row: {
+          category_id: string | null
+          challenger_finished_at: string | null
+          challenger_id: string
+          challenger_score: number
+          created_at: string
+          difficulty: Database["public"]["Enums"]["difficulty_level"] | null
+          id: string
+          opponent_finished_at: string | null
+          opponent_id: string
+          opponent_score: number
+          question_ids: string[]
+          questions_count: number
+          status: Database["public"]["Enums"]["match_status"]
+          updated_at: string
+          winner_id: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          challenger_finished_at?: string | null
+          challenger_id: string
+          challenger_score?: number
+          created_at?: string
+          difficulty?: Database["public"]["Enums"]["difficulty_level"] | null
+          id?: string
+          opponent_finished_at?: string | null
+          opponent_id: string
+          opponent_score?: number
+          question_ids?: string[]
+          questions_count?: number
+          status?: Database["public"]["Enums"]["match_status"]
+          updated_at?: string
+          winner_id?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          challenger_finished_at?: string | null
+          challenger_id?: string
+          challenger_score?: number
+          created_at?: string
+          difficulty?: Database["public"]["Enums"]["difficulty_level"] | null
+          id?: string
+          opponent_finished_at?: string | null
+          opponent_id?: string
+          opponent_score?: number
+          question_ids?: string[]
+          questions_count?: number
+          status?: Database["public"]["Enums"]["match_status"]
+          updated_at?: string
+          winner_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
@@ -243,6 +332,103 @@ export type Database = {
           },
         ]
       }
+      tournament_participants: {
+        Row: {
+          correct_answers: number
+          finished_at: string | null
+          id: string
+          joined_at: string
+          score: number
+          tournament_id: string
+          user_id: string
+        }
+        Insert: {
+          correct_answers?: number
+          finished_at?: string | null
+          id?: string
+          joined_at?: string
+          score?: number
+          tournament_id: string
+          user_id: string
+        }
+        Update: {
+          correct_answers?: number
+          finished_at?: string | null
+          id?: string
+          joined_at?: string
+          score?: number
+          tournament_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_participants_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tournaments: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          difficulty: Database["public"]["Enums"]["difficulty_level"] | null
+          ends_at: string | null
+          id: string
+          max_participants: number
+          name: string
+          prize_xp: number
+          questions_count: number
+          starts_at: string
+          status: Database["public"]["Enums"]["tournament_status"]
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          difficulty?: Database["public"]["Enums"]["difficulty_level"] | null
+          ends_at?: string | null
+          id?: string
+          max_participants?: number
+          name: string
+          prize_xp?: number
+          questions_count?: number
+          starts_at?: string
+          status?: Database["public"]["Enums"]["tournament_status"]
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          difficulty?: Database["public"]["Enums"]["difficulty_level"] | null
+          ends_at?: string | null
+          id?: string
+          max_participants?: number
+          name?: string
+          prize_xp?: number
+          questions_count?: number
+          starts_at?: string
+          status?: Database["public"]["Enums"]["tournament_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournaments_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_achievements: {
         Row: {
           achievement_id: string
@@ -311,7 +497,15 @@ export type Database = {
       age_group: "youth" | "cultured" | "family"
       app_role: "admin" | "moderator" | "user"
       difficulty_level: "easy" | "medium" | "hard"
+      friendship_status: "pending" | "accepted" | "blocked"
       game_mode: "solo" | "daily" | "multiplayer"
+      match_status:
+        | "pending"
+        | "active"
+        | "completed"
+        | "declined"
+        | "cancelled"
+      tournament_status: "upcoming" | "active" | "completed" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -442,7 +636,10 @@ export const Constants = {
       age_group: ["youth", "cultured", "family"],
       app_role: ["admin", "moderator", "user"],
       difficulty_level: ["easy", "medium", "hard"],
+      friendship_status: ["pending", "accepted", "blocked"],
       game_mode: ["solo", "daily", "multiplayer"],
+      match_status: ["pending", "active", "completed", "declined", "cancelled"],
+      tournament_status: ["upcoming", "active", "completed", "cancelled"],
     },
   },
 } as const
