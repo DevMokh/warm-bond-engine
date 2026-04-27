@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navbar } from "@/components/Navbar";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Trophy, Zap, Loader2 } from "lucide-react";
@@ -33,7 +33,7 @@ const Leaderboard = () => {
 
   return (
     <div className="min-h-screen pb-20 md:pb-0">
-      <Navbar />
+      
       <div className="container py-8 max-w-3xl">
         <div className="text-center mb-8 animate-fade-in">
           <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl gradient-bg shadow-elevated mb-4">

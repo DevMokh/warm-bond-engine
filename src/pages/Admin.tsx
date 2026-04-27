@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Navbar } from "@/components/Navbar";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -295,7 +295,7 @@ const Admin = () => {
   if (!isAdmin) {
     return (
       <div className="min-h-screen bg-background pb-20 md:pb-0">
-        <Navbar />
+        
         <div className="container max-w-md mx-auto px-4 py-12">
           <Card>
             <CardHeader className="text-center">
@@ -321,7 +321,7 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
-      <Navbar />
+      
       <div className="container max-w-6xl mx-auto px-4 py-8 space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3">

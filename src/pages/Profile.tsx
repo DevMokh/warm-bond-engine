@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navbar } from "@/components/Navbar";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
@@ -66,7 +66,7 @@ const Profile = () => {
   if (loading) {
     return (
       <div className="min-h-screen">
-        <Navbar />
+        
         <div className="container py-20 flex justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -91,7 +91,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen pb-20 md:pb-0">
-      <Navbar />
+      
 
       <div className="container py-8 max-w-4xl">
         {/* Profile Header */}
