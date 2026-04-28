@@ -109,6 +109,13 @@ const Tournaments = () => {
   useEffect(() => {
     load();
     supabase.from("categories").select("id, name_ar").then(({ data }) => setCategories(data ?? []));
+
+    const channel = supabase
+      .channel("tournament-participants-updates")
+      .on("postgres_changes", { event: "*", schema: "public", table: "tournament_participants" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "tournaments" }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [load]);
 
   const create = async () => {
