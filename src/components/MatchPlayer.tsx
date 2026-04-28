@@ -256,9 +256,9 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     onFinished?.();
   };
 
-  // Realtime subscribe for opponent finishing
+  // Realtime subscribe for opponent finishing / winner updates
   useEffect(() => {
-    if (!open || !match || !waiting) return;
+    if (!open || !match) return;
     const channel = supabase
       .channel(`match-${match.id}`)
       .on(
@@ -276,7 +276,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [open, match, waiting]);
+  }, [open, match?.id]);
 
   const handleClose = () => {
     onClose();
