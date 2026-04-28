@@ -8,10 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Swords, Check, X, Trophy } from "lucide-react";
+import { Swords, Check, X, Trophy, Play } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { MatchPlayer } from "@/components/MatchPlayer";
 
 interface Profile { user_id: string; display_name: string | null; username: string | null; level: number; }
 interface Match {
@@ -39,6 +40,7 @@ const Matches = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ opponent_id: "", category_id: "", difficulty: "medium", questions_count: 5 });
+  const [playingId, setPlayingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -111,9 +113,12 @@ const Matches = () => {
 
   const accept = async (id: string) => {
     await supabase.from("matches").update({ status: "active" }).eq("id", id);
-    toast.success("قبلت التحدي - العب من خلال صفحة اللعب لاحقاً");
+    toast.success("قبلت التحدي - ابدأ اللعب!");
+    setPlayingId(id);
     load();
   };
+
+  const playMatch = (id: string) => setPlayingId(id);
 
   const decline = async (id: string) => {
     await supabase.from("matches").update({ status: "declined" }).eq("id", id);
