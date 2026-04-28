@@ -12,6 +12,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+interface Participant {
+  user_id: string;
+  score: number;
+  correct_answers: number;
+  finished_at: string | null;
+  joined_at: string;
+  display_name: string;
+  avatar_url: string | null;
+}
+
 interface Tournament {
   id: string;
   name: string;
@@ -26,6 +36,8 @@ interface Tournament {
   created_by: string;
   participant_count?: number;
   is_joined?: boolean;
+  participants?: Participant[];
+  last_update?: string | null;
 }
 
 interface Category { id: string; name_ar: string; }
