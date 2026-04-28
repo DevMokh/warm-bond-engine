@@ -242,6 +242,13 @@ const Matches = () => {
             done.map((m) => <MatchCard key={m.id} m={m} />)}
         </CardContent></Card></TabsContent>
       </Tabs>
+
+      <MatchPlayer
+        open={!!playingId}
+        matchId={playingId}
+        onClose={() => { setPlayingId(null); load(); }}
+        onFinished={load}
+      />
     </div>
   );
 };
