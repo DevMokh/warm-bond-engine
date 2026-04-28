@@ -221,7 +221,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
         if (winner) {
           await supabase.from("game_sessions").insert({
             user_id: winner,
-            mode: "duel",
+            mode: "multiplayer",
             category_id: match.category_id ?? null,
             difficulty: match.difficulty ?? "medium",
             score: winner === l.challenger_id ? l.challenger_score : l.opponent_score,
@@ -242,7 +242,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
       // also save my session
       await supabase.from("game_sessions").insert({
         user_id: user.id,
-        mode: "duel",
+        mode: "multiplayer",
         category_id: match.category_id ?? null,
         difficulty: match.difficulty ?? "medium",
         score: finalScore,
