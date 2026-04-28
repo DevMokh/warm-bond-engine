@@ -58,21 +58,52 @@ const Tournaments = () => {
 
     const ids = data.map((t) => t.id);
     const { data: parts } = ids.length
-      ? await supabase.from("tournament_participants").select("tournament_id, user_id").in("tournament_id", ids)
+      ? await supabase
+          .from("tournament_participants")
+          .select("tournament_id, user_id, score, correct_answers, finished_at, joined_at")
+          .in("tournament_id", ids)
       : { data: [] };
 
-    const counts = new Map<string, number>();
+    const userIds = Array.from(new Set((parts ?? []).map((p) => p.user_id)));
+    const { data: profiles } = userIds.length
+      ? await supabase.from("profiles").select("user_id, display_name, avatar_url").in("user_id", userIds)
+      : { data: [] };
+    const profileMap = new Map((profiles ?? []).map((p) => [p.user_id, p]));
+
+    const byTournament = new Map<string, Participant[]>();
     const joined = new Set<string>();
     (parts ?? []).forEach((p) => {
-      counts.set(p.tournament_id, (counts.get(p.tournament_id) ?? 0) + 1);
+      const prof = profileMap.get(p.user_id);
+      const row: Participant = {
+        user_id: p.user_id,
+        score: p.score ?? 0,
+        correct_answers: p.correct_answers ?? 0,
+        finished_at: p.finished_at,
+        joined_at: p.joined_at,
+        display_name: prof?.display_name ?? "لاعب",
+        avatar_url: prof?.avatar_url ?? null,
+      };
+      const arr = byTournament.get(p.tournament_id) ?? [];
+      arr.push(row);
+      byTournament.set(p.tournament_id, arr);
       if (p.user_id === user?.id) joined.add(p.tournament_id);
     });
 
-    setTournaments(data.map((t) => ({
-      ...t,
-      participant_count: counts.get(t.id) ?? 0,
-      is_joined: joined.has(t.id),
-    })) as Tournament[]);
+    setTournaments(data.map((t) => {
+      const list = (byTournament.get(t.id) ?? []).sort((a, b) => b.score - a.score);
+      const lastUpdate = list
+        .map((p) => p.finished_at)
+        .filter((x): x is string => !!x)
+        .sort()
+        .at(-1) ?? null;
+      return {
+        ...t,
+        participant_count: list.length,
+        is_joined: joined.has(t.id),
+        participants: list,
+        last_update: lastUpdate,
+      };
+    }) as Tournament[]);
   }, [user]);
 
   useEffect(() => {
