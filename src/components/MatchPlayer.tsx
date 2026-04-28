@@ -256,9 +256,9 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     onFinished?.();
   };
 
-  // Realtime subscribe for opponent finishing
+  // Realtime subscribe for opponent finishing / winner updates
   useEffect(() => {
-    if (!open || !match || !waiting) return;
+    if (!open || !match) return;
     const channel = supabase
       .channel(`match-${match.id}`)
       .on(
@@ -276,7 +276,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [open, match, waiting]);
+  }, [open, match?.id]);
 
   const handleClose = () => {
     onClose();
@@ -400,12 +400,48 @@ const MatchResults = ({
   const both = match.challenger_finished_at && match.opponent_finished_at;
 
   if (waiting || !both) {
+    const oppFinished = isChallenger ? !!match.opponent_finished_at : !!match.challenger_finished_at;
+    const oppScore = isChallenger ? match.opponent_score : match.challenger_score;
+    const oppFinishedAt = isChallenger ? match.opponent_finished_at : match.challenger_finished_at;
+    const myFinishedAt = isChallenger ? match.challenger_finished_at : match.opponent_finished_at;
+
     return (
-      <div className="py-10 text-center space-y-4">
-        <div className="text-5xl">⏳</div>
-        <h2 className="text-xl font-extrabold">خلصت! مستني الخصم يخلص</h2>
-        <p className="text-sm text-muted-foreground">نتيجتك: <span className="font-bold text-primary">{myScore}</span></p>
-        <p className="text-xs text-muted-foreground">هيتم تحديد الفائز تلقائياً لما الخصم يكمّل</p>
+      <div className="py-8 text-center space-y-4">
+        <div className="text-5xl animate-pulse">⏳</div>
+        <h2 className="text-xl font-extrabold">خلصت! في انتظار الخصم</h2>
+
+        <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
+          <Card className="border-success/40 bg-success/5">
+            <CardContent className="p-4">
+              <Check className="h-5 w-5 text-success mx-auto mb-1" />
+              <div className="text-2xl font-extrabold">{myScore}</div>
+              <div className="text-[11px] text-muted-foreground">أنت — خلصت</div>
+            </CardContent>
+          </Card>
+          <Card className={cn(oppFinished ? "border-success/40 bg-success/5" : "border-warning/40 bg-warning/5")}>
+            <CardContent className="p-4">
+              {oppFinished ? (
+                <>
+                  <Check className="h-5 w-5 text-success mx-auto mb-1" />
+                  <div className="text-2xl font-extrabold">{oppScore}</div>
+                  <div className="text-[11px] text-muted-foreground">الخصم — خلّص</div>
+                </>
+              ) : (
+                <>
+                  <Loader2 className="h-5 w-5 text-warning mx-auto mb-1 animate-spin" />
+                  <div className="text-2xl font-extrabold">—</div>
+                  <div className="text-[11px] text-muted-foreground">الخصم — بيلعب</div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <WaitingTimer since={myFinishedAt} />
+
+        <p className="text-xs text-muted-foreground">
+          {oppFinished ? "بيتم احتساب الفائز الآن..." : "الشاشة بتتحدث تلقائياً لما الخصم يجاوب"}
+        </p>
         <Button onClick={onClose} variant="outline">إغلاق</Button>
       </div>
     );
@@ -438,6 +474,27 @@ const MatchResults = ({
       </div>
       {won && <p className="text-sm text-success">+100 XP 🎉</p>}
       <Button onClick={onClose} className="w-full max-w-xs">تمام</Button>
+    </div>
+  );
+};
+
+const WaitingTimer = ({ since }: { since: string | null }) => {
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    if (!since) return;
+    const start = new Date(since).getTime();
+    const tick = () => setSeconds(Math.max(0, Math.floor((Date.now() - start) / 1000)));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [since]);
+  if (!since) return null;
+  const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
+  const ss = String(seconds % 60).padStart(2, "0");
+  return (
+    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-sm font-mono">
+      <Timer className="h-4 w-4 text-muted-foreground" />
+      <span>وقت الانتظار: {mm}:{ss}</span>
     </div>
   );
 };
