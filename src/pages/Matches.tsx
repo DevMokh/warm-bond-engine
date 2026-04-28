@@ -231,7 +231,11 @@ const Matches = () => {
         </CardContent></Card></TabsContent>
         <TabsContent value="active"><Card><CardContent className="p-4 space-y-2">
           {active.length === 0 ? <p className="text-center text-muted-foreground py-6">مفيش تحديات جارية</p> :
-            active.map((m) => <MatchCard key={m.id} m={m} />)}
+            active.map((m) => <MatchCard key={m.id} m={m} action={
+              <Button size="sm" onClick={() => playMatch(m.id)} className="gap-1">
+                <Play className="h-4 w-4" /> ابدأ اللعب
+              </Button>
+            } />)}
         </CardContent></Card></TabsContent>
         <TabsContent value="done"><Card><CardContent className="p-4 space-y-2">
           {done.length === 0 ? <p className="text-center text-muted-foreground py-6">لسه ما لعبتش تحديات</p> :
