@@ -98,7 +98,7 @@ export const AppSidebar = () => {
           <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-bg shrink-0">
             <Brain className="h-5 w-5 text-primary-foreground" />
           </div>
-          {!collapsed && <span className="text-lg font-extrabold gradient-text">شغّل مخك</span>}
+          <span className="text-lg font-extrabold gradient-text">شغّل مخك</span>
         </div>
       </SidebarHeader>
 
@@ -138,7 +138,7 @@ export const AppSidebar = () => {
             <SidebarMenuItem>
               <SidebarMenuButton onClick={handleSignOut} className="text-destructive">
                 <LogOut className="h-4 w-4" />
-                {!collapsed && <span>خروج</span>}
+                <span>خروج</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -147,7 +147,7 @@ export const AppSidebar = () => {
             <SidebarMenuItem>
               <SidebarMenuButton onClick={() => navigate("/auth")}>
                 <User className="h-4 w-4" />
-                {!collapsed && <span>دخول</span>}
+                <span>دخول</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
