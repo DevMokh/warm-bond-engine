@@ -94,7 +94,7 @@ export const AppSidebar = () => {
     });
 
   return (
-    <Sidebar collapsible="icon" side="right">
+    <Sidebar collapsible="offcanvas" side="right">
       <SidebarHeader className="border-b border-border/50">
         <div className="flex items-center gap-2 px-2 py-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-bg shrink-0">
