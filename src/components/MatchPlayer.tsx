@@ -183,9 +183,10 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     const finalCorrect = correctRef.current;
 
     // 1) Save this player's score + finished_at
-    const updatePayload: Record<string, unknown> = isChallenger
-      ? { challenger_score: finalScore, challenger_finished_at: new Date().toISOString() }
-      : { opponent_score: finalScore, opponent_finished_at: new Date().toISOString() };
+    const nowIso = new Date().toISOString();
+    const updatePayload = isChallenger
+      ? { challenger_score: finalScore, challenger_finished_at: nowIso }
+      : { opponent_score: finalScore, opponent_finished_at: nowIso };
 
     const { error: uerr } = await supabase
       .from("matches")
