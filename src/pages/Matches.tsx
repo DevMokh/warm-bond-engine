@@ -113,9 +113,12 @@ const Matches = () => {
 
   const accept = async (id: string) => {
     await supabase.from("matches").update({ status: "active" }).eq("id", id);
-    toast.success("قبلت التحدي - العب من خلال صفحة اللعب لاحقاً");
+    toast.success("قبلت التحدي - ابدأ اللعب!");
+    setPlayingId(id);
     load();
   };
+
+  const playMatch = (id: string) => setPlayingId(id);
 
   const decline = async (id: string) => {
     await supabase.from("matches").update({ status: "declined" }).eq("id", id);
