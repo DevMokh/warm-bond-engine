@@ -243,27 +243,36 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
           />
         ) : current ? (
           <div className="space-y-4">
-            {/* Header */}
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="secondary">{categoryTitle}</Badge>
-                <Badge variant="outline">{branchTitle}</Badge>
-                <Badge>{config.title}</Badge>
-              </div>
-              <button onClick={handleClose} className="text-muted-foreground hover:text-foreground">
+            {/* Header: category pills + close */}
+            <div className="flex items-center justify-between gap-2">
+              <button onClick={handleClose} className="text-muted-foreground hover:text-foreground p-1 -m-1">
                 <X className="h-5 w-5" />
               </button>
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-warning/20 text-warning border border-warning/30">
+                  {config.title}
+                </span>
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-secondary/60 text-foreground border border-border/50">
+                  {branchTitle}
+                </span>
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-secondary/60 text-foreground border border-border/50">
+                  {categoryTitle}
+                </span>
+              </div>
             </div>
 
-            {/* Stats bar */}
+            {/* Stats bar: timer left, score + progress right */}
             <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-3">
-                <span className="font-bold">
-                  {totalQ > 0 ? `${index + 1} / ${totalQ}` : `سؤال ${index + 1}`}
-                </span>
-                <span className="text-primary font-bold">⭐ {score}</span>
-              </div>
-              <div className="flex items-center gap-3">
+              {config.timerSeconds > 0 ? (
+                <div className={cn(
+                  "flex items-center gap-1.5 font-bold text-base",
+                  timeLeft <= 3 && "text-destructive animate-pulse"
+                )}>
+                  <Timer className="h-4 w-4" />
+                  <span>{timeLeft}s</span>
+                </div>
+              ) : <span />}
+              <div className="flex items-center gap-4">
                 {config.lives > 0 && (
                   <div className="flex items-center gap-1">
                     {Array.from({ length: config.lives }).map((_, i) => (
@@ -274,29 +283,27 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
                     ))}
                   </div>
                 )}
-                {config.timerSeconds > 0 && (
-                  <div className={cn(
-                    "flex items-center gap-1 font-bold",
-                    timeLeft <= 3 && "text-destructive animate-pulse"
-                  )}>
-                    <Timer className="h-4 w-4" />
-                    {timeLeft}s
-                  </div>
-                )}
+                <span className="inline-flex items-center gap-1 font-bold text-warning">
+                  <span className="text-xl">⭐</span>
+                  <span className="text-base">{score}</span>
+                </span>
+                <span className="font-bold text-base">
+                  {totalQ > 0 ? `${index + 1} / ${totalQ}` : `${index + 1}`}
+                </span>
               </div>
             </div>
 
             <Progress value={progressPct} className="h-1.5" />
 
             {/* Question */}
-            <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+            <Card className="bg-gradient-to-br from-warning/10 to-warning/5 border-warning/30 border-2">
               <CardContent className="p-5 md:p-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <Badge variant="outline" className="text-[10px]">
+                <div className="flex items-center justify-end mb-3">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-warning/20 text-warning">
                     {current.difficulty === "easy" ? "سهل" : current.difficulty === "hard" ? "صعب" : "متوسط"}
-                  </Badge>
+                  </span>
                 </div>
-                <h2 className="text-lg md:text-xl font-bold leading-relaxed">{current.question}</h2>
+                <h2 className="text-lg md:text-xl font-bold leading-relaxed text-right">{current.question}</h2>
               </CardContent>
             </Card>
 
