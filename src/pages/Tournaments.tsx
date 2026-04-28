@@ -222,6 +222,47 @@ const Tournaments = () => {
                     <p className="text-muted-foreground">XP</p>
                   </div>
                 </div>
+
+                {/* Leaderboard */}
+                <div className="rounded-lg border border-border/50 bg-background/40 overflow-hidden">
+                  <div className="flex items-center justify-between px-3 py-2 bg-secondary/30 border-b border-border/50">
+                    <span className="text-xs font-bold flex items-center gap-1.5">
+                      <Trophy className="h-3.5 w-3.5 text-warning" /> ترتيب المتسابقين
+                    </span>
+                    {t.last_update && (
+                      <span className="text-[10px] text-muted-foreground">
+                        آخر تحديث: {new Date(t.last_update).toLocaleString("ar-EG", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })}
+                      </span>
+                    )}
+                  </div>
+                  {(t.participants?.length ?? 0) === 0 ? (
+                    <p className="text-center text-xs text-muted-foreground py-4">لا يوجد مشاركون بعد</p>
+                  ) : (
+                    <div className="divide-y divide-border/40">
+                      {t.participants!.slice(0, 5).map((p, i) => (
+                        <div key={p.user_id} className={`flex items-center gap-2 px-3 py-2 text-sm ${p.user_id === user?.id ? "bg-primary/10" : ""}`}>
+                          <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-extrabold shrink-0 ${
+                            i === 0 ? "bg-warning text-warning-foreground" :
+                            i === 1 ? "bg-muted text-foreground" :
+                            i === 2 ? "bg-accent/40 text-accent" :
+                            "bg-secondary text-muted-foreground"
+                          }`}>{i + 1}</span>
+                          <span className="flex-1 truncate">{p.display_name}</span>
+                          {p.finished_at && <span className="text-[10px] text-success">✓</span>}
+                          <span className="inline-flex items-center gap-0.5 text-primary font-bold text-xs">
+                            <Zap className="h-3 w-3" />{p.score} XP
+                          </span>
+                        </div>
+                      ))}
+                      {(t.participants?.length ?? 0) > 5 && (
+                        <div className="px-3 py-1.5 text-[11px] text-center text-muted-foreground">
+                          +{(t.participants!.length - 5)} لاعبين آخرين
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {t.is_joined ? (
                   <Button variant="secondary" disabled className="w-full"><Trophy className="h-4 w-4" />منضم</Button>
                 ) : t.status === "completed" || t.status === "cancelled" ? (
