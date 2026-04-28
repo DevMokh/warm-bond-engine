@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+
 import { Progress } from "@/components/ui/progress";
 import { Loader2, Heart, Timer, Trophy, X, Check, RotateCw } from "lucide-react";
 import { cn } from "@/lib/utils";
