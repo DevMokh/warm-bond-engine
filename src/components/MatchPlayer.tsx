@@ -400,12 +400,48 @@ const MatchResults = ({
   const both = match.challenger_finished_at && match.opponent_finished_at;
 
   if (waiting || !both) {
+    const oppFinished = isChallenger ? !!match.opponent_finished_at : !!match.challenger_finished_at;
+    const oppScore = isChallenger ? match.opponent_score : match.challenger_score;
+    const oppFinishedAt = isChallenger ? match.opponent_finished_at : match.challenger_finished_at;
+    const myFinishedAt = isChallenger ? match.challenger_finished_at : match.opponent_finished_at;
+
     return (
-      <div className="py-10 text-center space-y-4">
-        <div className="text-5xl">⏳</div>
-        <h2 className="text-xl font-extrabold">خلصت! مستني الخصم يخلص</h2>
-        <p className="text-sm text-muted-foreground">نتيجتك: <span className="font-bold text-primary">{myScore}</span></p>
-        <p className="text-xs text-muted-foreground">هيتم تحديد الفائز تلقائياً لما الخصم يكمّل</p>
+      <div className="py-8 text-center space-y-4">
+        <div className="text-5xl animate-pulse">⏳</div>
+        <h2 className="text-xl font-extrabold">خلصت! في انتظار الخصم</h2>
+
+        <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
+          <Card className="border-success/40 bg-success/5">
+            <CardContent className="p-4">
+              <Check className="h-5 w-5 text-success mx-auto mb-1" />
+              <div className="text-2xl font-extrabold">{myScore}</div>
+              <div className="text-[11px] text-muted-foreground">أنت — خلصت</div>
+            </CardContent>
+          </Card>
+          <Card className={cn(oppFinished ? "border-success/40 bg-success/5" : "border-warning/40 bg-warning/5")}>
+            <CardContent className="p-4">
+              {oppFinished ? (
+                <>
+                  <Check className="h-5 w-5 text-success mx-auto mb-1" />
+                  <div className="text-2xl font-extrabold">{oppScore}</div>
+                  <div className="text-[11px] text-muted-foreground">الخصم — خلّص</div>
+                </>
+              ) : (
+                <>
+                  <Loader2 className="h-5 w-5 text-warning mx-auto mb-1 animate-spin" />
+                  <div className="text-2xl font-extrabold">—</div>
+                  <div className="text-[11px] text-muted-foreground">الخصم — بيلعب</div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <WaitingTimer since={myFinishedAt} />
+
+        <p className="text-xs text-muted-foreground">
+          {oppFinished ? "بيتم احتساب الفائز الآن..." : "الشاشة بتتحدث تلقائياً لما الخصم يجاوب"}
+        </p>
         <Button onClick={onClose} variant="outline">إغلاق</Button>
       </div>
     );
