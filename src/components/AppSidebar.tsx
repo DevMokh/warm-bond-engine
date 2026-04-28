@@ -83,8 +83,8 @@ export const AppSidebar = () => {
                 active && "bg-primary/10 text-primary font-semibold"
               )}
             >
-              <Icon className="h-4 w-4 shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
+              <Icon className="h-5 w-5 shrink-0" />
+              <span className="text-base">{item.label}</span>
             </NavLink>
           </SidebarMenuButton>
         </SidebarMenuItem>
