@@ -22,6 +22,7 @@ type MatchRow = {
   id: string;
   challenger_id: string;
   opponent_id: string;
+  category_id: string | null;
   question_ids: string[];
   questions_count: number;
   difficulty: "easy" | "medium" | "hard" | null;
