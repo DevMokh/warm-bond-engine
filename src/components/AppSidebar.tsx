@@ -44,8 +44,6 @@ const socialItems = [
 ];
 
 export const AppSidebar = () => {
-  const { state } = useSidebar();
-  const collapsed = state === "collapsed";
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
