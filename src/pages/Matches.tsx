@@ -8,10 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Swords, Check, X, Trophy } from "lucide-react";
+import { Swords, Check, X, Trophy, Play } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { MatchPlayer } from "@/components/MatchPlayer";
 
 interface Profile { user_id: string; display_name: string | null; username: string | null; level: number; }
 interface Match {
