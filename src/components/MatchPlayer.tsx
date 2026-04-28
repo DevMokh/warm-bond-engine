@@ -477,3 +477,24 @@ const MatchResults = ({
     </div>
   );
 };
+
+const WaitingTimer = ({ since }: { since: string | null }) => {
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    if (!since) return;
+    const start = new Date(since).getTime();
+    const tick = () => setSeconds(Math.max(0, Math.floor((Date.now() - start) / 1000)));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [since]);
+  if (!since) return null;
+  const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
+  const ss = String(seconds % 60).padStart(2, "0");
+  return (
+    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-sm font-mono">
+      <Timer className="h-4 w-4 text-muted-foreground" />
+      <span>وقت الانتظار: {mm}:{ss}</span>
+    </div>
+  );
+};
