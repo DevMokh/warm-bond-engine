@@ -12,6 +12,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+interface Participant {
+  user_id: string;
+  score: number;
+  correct_answers: number;
+  finished_at: string | null;
+  joined_at: string;
+  display_name: string;
+  avatar_url: string | null;
+}
+
 interface Tournament {
   id: string;
   name: string;
@@ -26,6 +36,8 @@ interface Tournament {
   created_by: string;
   participant_count?: number;
   is_joined?: boolean;
+  participants?: Participant[];
+  last_update?: string | null;
 }
 
 interface Category { id: string; name_ar: string; }
@@ -46,26 +58,64 @@ const Tournaments = () => {
 
     const ids = data.map((t) => t.id);
     const { data: parts } = ids.length
-      ? await supabase.from("tournament_participants").select("tournament_id, user_id").in("tournament_id", ids)
+      ? await supabase
+          .from("tournament_participants")
+          .select("tournament_id, user_id, score, correct_answers, finished_at, joined_at")
+          .in("tournament_id", ids)
       : { data: [] };
 
-    const counts = new Map<string, number>();
+    const userIds = Array.from(new Set((parts ?? []).map((p) => p.user_id)));
+    const { data: profiles } = userIds.length
+      ? await supabase.from("profiles").select("user_id, display_name, avatar_url").in("user_id", userIds)
+      : { data: [] };
+    const profileMap = new Map((profiles ?? []).map((p) => [p.user_id, p]));
+
+    const byTournament = new Map<string, Participant[]>();
     const joined = new Set<string>();
     (parts ?? []).forEach((p) => {
-      counts.set(p.tournament_id, (counts.get(p.tournament_id) ?? 0) + 1);
+      const prof = profileMap.get(p.user_id);
+      const row: Participant = {
+        user_id: p.user_id,
+        score: p.score ?? 0,
+        correct_answers: p.correct_answers ?? 0,
+        finished_at: p.finished_at,
+        joined_at: p.joined_at,
+        display_name: prof?.display_name ?? "لاعب",
+        avatar_url: prof?.avatar_url ?? null,
+      };
+      const arr = byTournament.get(p.tournament_id) ?? [];
+      arr.push(row);
+      byTournament.set(p.tournament_id, arr);
       if (p.user_id === user?.id) joined.add(p.tournament_id);
     });
 
-    setTournaments(data.map((t) => ({
-      ...t,
-      participant_count: counts.get(t.id) ?? 0,
-      is_joined: joined.has(t.id),
-    })) as Tournament[]);
+    setTournaments(data.map((t) => {
+      const list = (byTournament.get(t.id) ?? []).sort((a, b) => b.score - a.score);
+      const lastUpdate = list
+        .map((p) => p.finished_at)
+        .filter((x): x is string => !!x)
+        .sort()
+        .at(-1) ?? null;
+      return {
+        ...t,
+        participant_count: list.length,
+        is_joined: joined.has(t.id),
+        participants: list,
+        last_update: lastUpdate,
+      };
+    }) as Tournament[]);
   }, [user]);
 
   useEffect(() => {
     load();
     supabase.from("categories").select("id, name_ar").then(({ data }) => setCategories(data ?? []));
+
+    const channel = supabase
+      .channel("tournament-participants-updates")
+      .on("postgres_changes", { event: "*", schema: "public", table: "tournament_participants" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "tournaments" }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [load]);
 
   const create = async () => {
@@ -179,6 +229,47 @@ const Tournaments = () => {
                     <p className="text-muted-foreground">XP</p>
                   </div>
                 </div>
+
+                {/* Leaderboard */}
+                <div className="rounded-lg border border-border/50 bg-background/40 overflow-hidden">
+                  <div className="flex items-center justify-between px-3 py-2 bg-secondary/30 border-b border-border/50">
+                    <span className="text-xs font-bold flex items-center gap-1.5">
+                      <Trophy className="h-3.5 w-3.5 text-warning" /> ترتيب المتسابقين
+                    </span>
+                    {t.last_update && (
+                      <span className="text-[10px] text-muted-foreground">
+                        آخر تحديث: {new Date(t.last_update).toLocaleString("ar-EG", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })}
+                      </span>
+                    )}
+                  </div>
+                  {(t.participants?.length ?? 0) === 0 ? (
+                    <p className="text-center text-xs text-muted-foreground py-4">لا يوجد مشاركون بعد</p>
+                  ) : (
+                    <div className="divide-y divide-border/40">
+                      {t.participants!.slice(0, 5).map((p, i) => (
+                        <div key={p.user_id} className={`flex items-center gap-2 px-3 py-2 text-sm ${p.user_id === user?.id ? "bg-primary/10" : ""}`}>
+                          <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-extrabold shrink-0 ${
+                            i === 0 ? "bg-warning text-warning-foreground" :
+                            i === 1 ? "bg-muted text-foreground" :
+                            i === 2 ? "bg-accent/40 text-accent" :
+                            "bg-secondary text-muted-foreground"
+                          }`}>{i + 1}</span>
+                          <span className="flex-1 truncate">{p.display_name}</span>
+                          {p.finished_at && <span className="text-[10px] text-success">✓</span>}
+                          <span className="inline-flex items-center gap-0.5 text-primary font-bold text-xs">
+                            <Zap className="h-3 w-3" />{p.score} XP
+                          </span>
+                        </div>
+                      ))}
+                      {(t.participants?.length ?? 0) > 5 && (
+                        <div className="px-3 py-1.5 text-[11px] text-center text-muted-foreground">
+                          +{(t.participants!.length - 5)} لاعبين آخرين
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {t.is_joined ? (
                   <Button variant="secondary" disabled className="w-full"><Trophy className="h-4 w-4" />منضم</Button>
                 ) : t.status === "completed" || t.status === "cancelled" ? (

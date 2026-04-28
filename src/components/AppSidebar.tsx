@@ -23,7 +23,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/components/ui/sidebar";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,8 +43,6 @@ const socialItems = [
 ];
 
 export const AppSidebar = () => {
-  const { state } = useSidebar();
-  const collapsed = state === "collapsed";
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -85,8 +82,8 @@ export const AppSidebar = () => {
                 active && "bg-primary/10 text-primary font-semibold"
               )}
             >
-              <Icon className="h-4 w-4 shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
+              <Icon className="h-5 w-5 shrink-0" />
+              <span className="text-base">{item.label}</span>
             </NavLink>
           </SidebarMenuButton>
         </SidebarMenuItem>
@@ -94,13 +91,13 @@ export const AppSidebar = () => {
     });
 
   return (
-    <Sidebar collapsible="icon" side="right">
+    <Sidebar collapsible="offcanvas" side="right">
       <SidebarHeader className="border-b border-border/50">
         <div className="flex items-center gap-2 px-2 py-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-bg shrink-0">
             <Brain className="h-5 w-5 text-primary-foreground" />
           </div>
-          {!collapsed && <span className="text-lg font-extrabold gradient-text">شغّل مخك</span>}
+          <span className="text-lg font-extrabold gradient-text">شغّل مخك</span>
         </div>
       </SidebarHeader>
 
@@ -140,7 +137,7 @@ export const AppSidebar = () => {
             <SidebarMenuItem>
               <SidebarMenuButton onClick={handleSignOut} className="text-destructive">
                 <LogOut className="h-4 w-4" />
-                {!collapsed && <span>خروج</span>}
+                <span>خروج</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -149,7 +146,7 @@ export const AppSidebar = () => {
             <SidebarMenuItem>
               <SidebarMenuButton onClick={() => navigate("/auth")}>
                 <User className="h-4 w-4" />
-                {!collapsed && <span>دخول</span>}
+                <span>دخول</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
