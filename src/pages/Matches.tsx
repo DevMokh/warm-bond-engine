@@ -40,6 +40,7 @@ const Matches = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ opponent_id: "", category_id: "", difficulty: "medium", questions_count: 5 });
+  const [playingId, setPlayingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!user) return;
