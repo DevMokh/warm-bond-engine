@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Timer, Trophy, X, Check, Swords, RotateCcw, Clock } from "lucide-react";
+import { Loader2, Timer, Trophy, X, Check, Swords, RotateCcw, Clock, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -31,6 +31,9 @@ type MatchRow = {
   opponent_score: number;
   challenger_finished_at: string | null;
   opponent_finished_at: string | null;
+  challenger_progress: number;
+  opponent_progress: number;
+  current_question_started_at: string | null;
   winner_id: string | null;
   created_at?: string;
 };
@@ -55,32 +58,28 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   const [selected, setSelected] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [timeLeft, setTimeLeft] = useState(TIMER);
+  const [questionStartAt, setQuestionStartAt] = useState<number | null>(null);
   const [finished, setFinished] = useState(false);
   const [waiting, setWaiting] = useState(false);
+  const [rematchSent, setRematchSent] = useState(false);
+  const [rematchChecking, setRematchChecking] = useState(false);
   const savedRef = useRef(false);
   const scoreRef = useRef(0);
   const correctRef = useRef(0);
   const oppNotifiedRef = useRef(false);
 
-  useEffect(() => {
-    scoreRef.current = score;
-  }, [score]);
-  useEffect(() => {
-    correctRef.current = correct;
-  }, [correct]);
+  useEffect(() => { scoreRef.current = score; }, [score]);
+  useEffect(() => { correctRef.current = correct; }, [correct]);
 
   useEffect(() => {
     if (!open || !matchId || !user) return;
     let cancelled = false;
     setLoading(true);
-    setIndex(0);
-    setScore(0);
-    setCorrect(0);
-    setSelected(null);
-    setRevealed(false);
-    setTimeLeft(TIMER);
-    setFinished(false);
-    setWaiting(false);
+    setIndex(0); setScore(0); setCorrect(0);
+    setSelected(null); setRevealed(false);
+    setTimeLeft(TIMER); setQuestionStartAt(null);
+    setFinished(false); setWaiting(false);
+    setRematchSent(false);
     savedRef.current = false;
     oppNotifiedRef.current = false;
 
@@ -92,14 +91,12 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
       const mm = m as MatchRow;
       setMatch(mm);
 
-      const already =
-        (mm.challenger_id === user.id && mm.challenger_finished_at) ||
-        (mm.opponent_id === user.id && mm.opponent_finished_at);
-      if (already) {
-        setFinished(true);
-        setWaiting(!mm.winner_id);
-        setLoading(false);
-        return;
+      const isCh = mm.challenger_id === user.id;
+      const myProg = isCh ? mm.challenger_progress : mm.opponent_progress;
+      const myFinished = isCh ? mm.challenger_finished_at : mm.opponent_finished_at;
+
+      if (myFinished) {
+        setFinished(true); setWaiting(!mm.winner_id); setLoading(false); return;
       }
 
       const ids = mm.question_ids || [];
@@ -111,24 +108,43 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
       const byId = new Map(qs.map((q) => [q.id, q]));
       const ordered = ids.map((id) => byId.get(id)).filter(Boolean) as unknown as Question[];
       setPool(ordered);
+      setIndex(myProg || 0);
+      // start timer with server timestamp for sync
+      const startedAt = await markQuestionStart(mm.id);
+      setQuestionStartAt(startedAt);
+      setTimeLeft(TIMER);
       setLoading(false);
     })();
 
     return () => { cancelled = true; };
   }, [open, matchId, user]);
 
+  // Server-synced per-question timer
   useEffect(() => {
-    if (!open || loading || finished || revealed || !pool.length) return;
-    if (timeLeft <= 0) { handleAnswer(-1); return; }
-    const t = setTimeout(() => setTimeLeft((s) => s - 1), 1000);
-    return () => clearTimeout(t);
+    if (!open || loading || finished || revealed || !pool.length || questionStartAt == null) return;
+    const tick = () => {
+      const elapsed = Math.floor((Date.now() - questionStartAt) / 1000);
+      const left = Math.max(0, TIMER - elapsed);
+      setTimeLeft(left);
+      if (left <= 0) handleAnswer(-1);
+    };
+    tick();
+    const id = setInterval(tick, 250);
+    return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeLeft, open, loading, finished, revealed, pool.length]);
+  }, [questionStartAt, open, loading, finished, revealed, pool.length]);
 
   const current = pool[index];
 
+  // Records server time when this player begins a question; returns parsed local ms
+  const markQuestionStart = async (mid: string): Promise<number> => {
+    const nowIso = new Date().toISOString();
+    await supabase.from("matches").update({ current_question_started_at: nowIso }).eq("id", mid);
+    return new Date(nowIso).getTime();
+  };
+
   const handleAnswer = (optIdx: number) => {
-    if (revealed || !current) return;
+    if (revealed || !current || !match || !user) return;
     setSelected(optIdx);
     setRevealed(true);
     if (optIdx === current.correct_answer) {
@@ -136,14 +152,24 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
       const bonus = current.difficulty === "hard" ? 30 : current.difficulty === "medium" ? 20 : 10;
       setScore((s) => s + bonus + Math.max(0, timeLeft));
     }
+    // Save progress live so opponent sees it
+    const newProgress = index + 1;
+    const isCh = match.challenger_id === user.id;
+    supabase.from("matches").update(
+      isCh ? { challenger_progress: newProgress } : { opponent_progress: newProgress }
+    ).eq("id", match.id);
+
     setTimeout(() => nextQ(), 1200);
   };
 
-  const nextQ = () => {
+  const nextQ = async () => {
     if (index + 1 >= pool.length) { finishMatch(); return; }
     setIndex((i) => i + 1);
-    setSelected(null);
-    setRevealed(false);
+    setSelected(null); setRevealed(false);
+    if (match) {
+      const startedAt = await markQuestionStart(match.id);
+      setQuestionStartAt(startedAt);
+    }
     setTimeLeft(TIMER);
   };
 
@@ -158,8 +184,8 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
 
     const nowIso = new Date().toISOString();
     const updatePayload = isChallenger
-      ? { challenger_score: finalScore, challenger_finished_at: nowIso }
-      : { opponent_score: finalScore, opponent_finished_at: nowIso };
+      ? { challenger_score: finalScore, challenger_finished_at: nowIso, challenger_progress: pool.length }
+      : { opponent_score: finalScore, opponent_finished_at: nowIso, opponent_progress: pool.length };
 
     const { error: uerr } = await supabase.from("matches").update(updatePayload).eq("id", match.id);
     if (uerr) { toast.error("فشل حفظ النتيجة"); return; }
@@ -208,7 +234,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     onFinished?.();
   };
 
-  // Realtime: notify when opponent finishes
+  // Realtime
   useEffect(() => {
     if (!open || !match || !user) return;
     const channel = supabase
@@ -217,12 +243,12 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
         { event: "UPDATE", schema: "public", table: "matches", filter: `id=eq.${match.id}` },
         (payload) => {
           const l = payload.new as MatchRow;
-          const isChallenger = l.challenger_id === user.id;
-          const oppFinishedNow = isChallenger ? !!l.opponent_finished_at : !!l.challenger_finished_at;
-          const oppFinishedBefore = match ? (isChallenger ? !!match.opponent_finished_at : !!match.challenger_finished_at) : false;
+          const isCh = l.challenger_id === user.id;
+          const oppFinishedNow = isCh ? !!l.opponent_finished_at : !!l.challenger_finished_at;
+          const oppFinishedBefore = match ? (isCh ? !!match.opponent_finished_at : !!match.challenger_finished_at) : false;
           if (oppFinishedNow && !oppFinishedBefore && !oppNotifiedRef.current) {
             oppNotifiedRef.current = true;
-            const oppScore = isChallenger ? l.opponent_score : l.challenger_score;
+            const oppScore = isCh ? l.opponent_score : l.challenger_score;
             toast.success(`الخصم خلّص! نتيجته ${oppScore}`, { description: "بيتم احتساب الفائز..." });
           }
           setMatch(l);
@@ -243,10 +269,45 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     onClose();
   };
 
+  // Check if a pending rematch from me to same opponent already exists
+  useEffect(() => {
+    if (!finished || !match || !user) return;
+    let cancelled = false;
+    (async () => {
+      setRematchChecking(true);
+      const opponentId = match.challenger_id === user.id ? match.opponent_id : match.challenger_id;
+      const { data } = await supabase
+        .from("matches")
+        .select("id")
+        .eq("challenger_id", user.id)
+        .eq("opponent_id", opponentId)
+        .eq("status", "pending")
+        .gt("created_at", match.created_at ?? new Date(0).toISOString())
+        .limit(1);
+      if (!cancelled) setRematchSent((data ?? []).length > 0);
+      setRematchChecking(false);
+    })();
+    return () => { cancelled = true; };
+  }, [finished, match?.id, user?.id]);
+
   const rematch = async () => {
-    if (!match || !user) return;
+    if (!match || !user || rematchSent) return;
+    setRematchSent(true);
     const opponentId = match.challenger_id === user.id ? match.opponent_id : match.challenger_id;
-    // pull a fresh random set of questions with the same settings
+
+    // Re-check to prevent double-send race
+    const { data: existing } = await supabase
+      .from("matches").select("id")
+      .eq("challenger_id", user.id)
+      .eq("opponent_id", opponentId)
+      .eq("status", "pending")
+      .limit(1);
+    if (existing && existing.length > 0) {
+      toast.info("بعت تحدي إعادة قبل كده، استنى رد الخصم");
+      onClose();
+      return;
+    }
+
     let qids = match.question_ids;
     if (match.category_id && match.difficulty) {
       const { data: qs } = await supabase
@@ -268,7 +329,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
       question_ids: qids,
       status: "pending",
     });
-    if (error) toast.error("فشل إرسال إعادة المباراة");
+    if (error) { toast.error("فشل إرسال إعادة المباراة"); setRematchSent(false); }
     else { toast.success("اتبعت تحدي إعادة ⚔️"); onFinished?.(); onClose(); }
   };
 
@@ -277,9 +338,15 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   const total = pool.length;
   const progressPct = total > 0 ? ((index + (revealed ? 1 : 0)) / total) * 100 : 0;
 
+  // Opponent live progress
+  const isChallenger = match ? match.challenger_id === user?.id : false;
+  const oppProgress = match ? (isChallenger ? match.opponent_progress : match.challenger_progress) : 0;
+  const oppFinishedLive = match ? !!(isChallenger ? match.opponent_finished_at : match.challenger_finished_at) : false;
+  const oppPct = total > 0 ? Math.min(100, (oppProgress / total) * 100) : 0;
+
   return (
     <Dialog open={open} onOpenChange={(o) => !o && tryClose()}>
-      <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
+      <DialogContent className="w-screen h-[100dvh] max-w-none sm:max-w-2xl sm:h-auto sm:max-h-[92vh] overflow-y-auto rounded-none sm:rounded-lg p-4 sm:p-6">
         {loading ? (
           <div className="py-16 flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -291,8 +358,12 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
             userId={user?.id || ""}
             waiting={waiting}
             myScore={scoreRef.current}
+            myCorrect={correctRef.current}
+            totalQs={pool.length || match?.questions_count || 0}
             onClose={onClose}
             onRematch={rematch}
+            rematchSent={rematchSent}
+            rematchChecking={rematchChecking}
           />
         ) : current ? (
           <div className="space-y-4">
@@ -320,6 +391,19 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
 
             <Progress value={progressPct} className="h-1.5" />
             <Progress value={(timeLeft / TIMER) * 100} className={cn("h-1", timeLeft <= 3 && "[&>div]:bg-destructive")} />
+
+            {/* Opponent live progress */}
+            <div className="rounded-lg border border-border bg-muted/30 p-2.5 space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="flex items-center gap-1 font-bold text-muted-foreground">
+                  <Activity className="h-3 w-3" /> تقدم الخصم
+                </span>
+                <span className="font-mono">
+                  {oppFinishedLive ? "خلّص ✅" : `${oppProgress}/${total}`}
+                </span>
+              </div>
+              <Progress value={oppFinishedLive ? 100 : oppPct} className="h-1 [&>div]:bg-warning" />
+            </div>
 
             <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
               <CardContent className="p-5 md:p-6">
@@ -373,7 +457,7 @@ const fmtTime = (iso: string | null | undefined) => {
   } catch { return "—"; }
 };
 
-const EventLog = ({ match, userId }: { match: MatchRow; userId: string }) => {
+const EventLog = ({ match, userId, tieNote }: { match: MatchRow; userId: string; tieNote?: string }) => {
   const isChallenger = match.challenger_id === userId;
   const myFinish = isChallenger ? match.challenger_finished_at : match.opponent_finished_at;
   const oppFinish = isChallenger ? match.opponent_finished_at : match.challenger_finished_at;
@@ -385,9 +469,14 @@ const EventLog = ({ match, userId }: { match: MatchRow; userId: string }) => {
     { time: myFinish, label: `✅ خلصت أنت (نتيجتك ${myScore})` },
     { time: oppFinish, label: `✅ خلّص الخصم (نتيجته ${oppScore})` },
   ];
-  if (match.winner_id !== null && match.challenger_finished_at && match.opponent_finished_at) {
+  if (match.challenger_finished_at && match.opponent_finished_at) {
     const wonByMe = match.winner_id === userId;
-    const wlbl = !match.winner_id ? "🤝 تعادل (نفس النتيجة)" : wonByMe ? "🏆 احتُسبت لك (نتيجتك أعلى)" : "💔 فاز الخصم (نتيجته أعلى)";
+    const isTie = !match.winner_id;
+    const wlbl = isTie
+      ? `🤝 تعادل — نفس النتيجة (${myScore} = ${oppScore})`
+      : wonByMe
+        ? `🏆 احتُسبت لك (${myScore} > ${oppScore})`
+        : `💔 فاز الخصم (${oppScore} > ${myScore})`;
     events.push({ time: oppFinish && myFinish ? (new Date(oppFinish) > new Date(myFinish) ? oppFinish : myFinish) : null, label: wlbl });
   }
 
@@ -405,20 +494,29 @@ const EventLog = ({ match, userId }: { match: MatchRow; userId: string }) => {
             </li>
           ))}
         </ul>
+        {tieNote && (
+          <div className="mt-2 pt-2 border-t border-border text-[11px] text-muted-foreground leading-relaxed">
+            {tieNote}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 };
 
 const MatchResults = ({
-  match, userId, waiting, myScore, onClose, onRematch,
+  match, userId, waiting, myScore, myCorrect, totalQs, onClose, onRematch, rematchSent, rematchChecking,
 }: {
   match: MatchRow | null;
   userId: string;
   waiting: boolean;
   myScore: number;
+  myCorrect: number;
+  totalQs: number;
   onClose: () => void;
   onRematch: () => void;
+  rematchSent: boolean;
+  rematchChecking: boolean;
 }) => {
   if (!match) {
     return (
@@ -436,7 +534,9 @@ const MatchResults = ({
   if (waiting || !both) {
     const oppFinished = isChallenger ? !!match.opponent_finished_at : !!match.challenger_finished_at;
     const oppScore = isChallenger ? match.opponent_score : match.challenger_score;
+    const oppProgress = isChallenger ? match.opponent_progress : match.challenger_progress;
     const myFinishedAt = isChallenger ? match.challenger_finished_at : match.opponent_finished_at;
+    const oppPct = totalQs > 0 ? Math.min(100, (oppProgress / totalQs) * 100) : 0;
 
     return (
       <div className="py-6 text-center space-y-4">
@@ -452,7 +552,7 @@ const MatchResults = ({
             </CardContent>
           </Card>
           <Card className={cn(oppFinished ? "border-success/40 bg-success/5" : "border-warning/40 bg-warning/5")}>
-            <CardContent className="p-4">
+            <CardContent className="p-4 space-y-1.5">
               {oppFinished ? (
                 <>
                   <Check className="h-5 w-5 text-success mx-auto mb-1" />
@@ -462,8 +562,9 @@ const MatchResults = ({
               ) : (
                 <>
                   <Loader2 className="h-5 w-5 text-warning mx-auto mb-1 animate-spin" />
-                  <div className="text-2xl font-extrabold">—</div>
+                  <div className="text-lg font-extrabold">{oppProgress}/{totalQs}</div>
                   <div className="text-[11px] text-muted-foreground">الخصم — بيلعب</div>
+                  <Progress value={oppPct} className="h-1 [&>div]:bg-warning" />
                 </>
               )}
             </CardContent>
@@ -474,7 +575,7 @@ const MatchResults = ({
         <EventLog match={match} userId={userId} />
 
         <p className="text-xs text-muted-foreground">
-          {oppFinished ? "بيتم احتساب الفائز الآن..." : "الشاشة بتتحدث تلقائياً لما الخصم يجاوب"}
+          {oppFinished ? "بيتم احتساب الفائز الآن..." : "الشاشة بتتحدث تلقائياً مع كل سؤال يجاوبه الخصم"}
         </p>
         <Button onClick={onClose} variant="outline">إغلاق</Button>
       </div>
@@ -485,6 +586,10 @@ const MatchResults = ({
   const tie = !match.winner_id;
   const emoji = tie ? "🤝" : won ? "🏆" : "💔";
   const title = tie ? "تعادل!" : won ? "فزت!" : "خسرت";
+
+  const tieNote = tie
+    ? `الاحتساب: نتيجتك (${mine}) = نتيجة الخصم (${opp}). إجاباتك الصحيحة: ${myCorrect}/${totalQs}. النقاط بتتحسب: 10/20/30 حسب الصعوبة + الثواني المتبقية لكل سؤال صح. بما إن المجموع متساوي، النتيجة تعادل ومفيش XP.`
+    : undefined;
 
   return (
     <div className="py-6 text-center space-y-4">
@@ -507,12 +612,18 @@ const MatchResults = ({
         </Card>
       </div>
       {won && <p className="text-sm text-success">+100 XP 🎉</p>}
+      {tie && (
+        <Card className="border-warning/40 bg-warning/5 text-right max-w-md mx-auto">
+          <CardContent className="p-3 text-xs leading-relaxed">{tieNote}</CardContent>
+        </Card>
+      )}
 
-      <EventLog match={match} userId={userId} />
+      <EventLog match={match} userId={userId} tieNote={tie ? tieNote : undefined} />
 
       <div className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
-        <Button onClick={onRematch} className="flex-1 gap-2">
-          <RotateCcw className="h-4 w-4" /> إعادة المباراة
+        <Button onClick={onRematch} disabled={rematchSent || rematchChecking} className="flex-1 gap-2">
+          <RotateCcw className="h-4 w-4" />
+          {rematchSent ? "في انتظار رد الخصم" : "إعادة المباراة"}
         </Button>
         <Button onClick={onClose} variant="outline" className="flex-1">تمام</Button>
       </div>
