@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Timer, Trophy, X, Check, Swords } from "lucide-react";
+import { Loader2, Timer, Trophy, X, Check, Swords, RotateCcw, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -32,6 +32,7 @@ type MatchRow = {
   challenger_finished_at: string | null;
   opponent_finished_at: string | null;
   winner_id: string | null;
+  created_at?: string;
 };
 
 type Props = {
@@ -59,6 +60,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   const savedRef = useRef(false);
   const scoreRef = useRef(0);
   const correctRef = useRef(0);
+  const oppNotifiedRef = useRef(false);
 
   useEffect(() => {
     scoreRef.current = score;
@@ -67,7 +69,6 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     correctRef.current = correct;
   }, [correct]);
 
-  // Load match + questions
   useEffect(() => {
     if (!open || !matchId || !user) return;
     let cancelled = false;
@@ -81,23 +82,16 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     setFinished(false);
     setWaiting(false);
     savedRef.current = false;
+    oppNotifiedRef.current = false;
 
     (async () => {
       const { data: m, error: me } = await supabase
-        .from("matches")
-        .select("*")
-        .eq("id", matchId)
-        .maybeSingle();
+        .from("matches").select("*").eq("id", matchId).maybeSingle();
       if (cancelled) return;
-      if (me || !m) {
-        toast.error("فشل تحميل التحدي");
-        setLoading(false);
-        return;
-      }
+      if (me || !m) { toast.error("فشل تحميل التحدي"); setLoading(false); return; }
       const mm = m as MatchRow;
       setMatch(mm);
 
-      // Check if current user already finished
       const already =
         (mm.challenger_id === user.id && mm.challenger_finished_at) ||
         (mm.opponent_id === user.id && mm.opponent_finished_at);
@@ -109,40 +103,23 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
       }
 
       const ids = mm.question_ids || [];
-      if (ids.length === 0) {
-        toast.error("مفيش أسئلة في التحدي");
-        setLoading(false);
-        return;
-      }
+      if (ids.length === 0) { toast.error("مفيش أسئلة في التحدي"); setLoading(false); return; }
       const { data: qs, error: qe } = await supabase
-        .from("questions")
-        .select("id, question, options, correct_answer, difficulty")
-        .in("id", ids);
+        .from("questions").select("id, question, options, correct_answer, difficulty").in("id", ids);
       if (cancelled) return;
-      if (qe || !qs) {
-        toast.error("فشل تحميل الأسئلة");
-        setLoading(false);
-        return;
-      }
-      // Preserve original order from question_ids
+      if (qe || !qs) { toast.error("فشل تحميل الأسئلة"); setLoading(false); return; }
       const byId = new Map(qs.map((q) => [q.id, q]));
       const ordered = ids.map((id) => byId.get(id)).filter(Boolean) as unknown as Question[];
       setPool(ordered);
       setLoading(false);
     })();
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [open, matchId, user]);
 
-  // Timer
   useEffect(() => {
     if (!open || loading || finished || revealed || !pool.length) return;
-    if (timeLeft <= 0) {
-      handleAnswer(-1);
-      return;
-    }
+    if (timeLeft <= 0) { handleAnswer(-1); return; }
     const t = setTimeout(() => setTimeLeft((s) => s - 1), 1000);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -163,10 +140,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   };
 
   const nextQ = () => {
-    if (index + 1 >= pool.length) {
-      finishMatch();
-      return;
-    }
+    if (index + 1 >= pool.length) { finishMatch(); return; }
     setIndex((i) => i + 1);
     setSelected(null);
     setRevealed(false);
@@ -182,27 +156,15 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     const finalScore = scoreRef.current;
     const finalCorrect = correctRef.current;
 
-    // 1) Save this player's score + finished_at
     const nowIso = new Date().toISOString();
     const updatePayload = isChallenger
       ? { challenger_score: finalScore, challenger_finished_at: nowIso }
       : { opponent_score: finalScore, opponent_finished_at: nowIso };
 
-    const { error: uerr } = await supabase
-      .from("matches")
-      .update(updatePayload)
-      .eq("id", match.id);
-    if (uerr) {
-      toast.error("فشل حفظ النتيجة");
-      return;
-    }
+    const { error: uerr } = await supabase.from("matches").update(updatePayload).eq("id", match.id);
+    if (uerr) { toast.error("فشل حفظ النتيجة"); return; }
 
-    // 2) Re-fetch latest and determine winner if both finished
-    const { data: latest } = await supabase
-      .from("matches")
-      .select("*")
-      .eq("id", match.id)
-      .maybeSingle();
+    const { data: latest } = await supabase.from("matches").select("*").eq("id", match.id).maybeSingle();
     if (!latest) return;
     const l = latest as MatchRow;
 
@@ -210,36 +172,27 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
       let winner: string | null = null;
       if (l.challenger_score > l.opponent_score) winner = l.challenger_id;
       else if (l.opponent_score > l.challenger_score) winner = l.opponent_id;
-      // null = tie
 
       const { error: ferr } = await supabase
-        .from("matches")
-        .update({ winner_id: winner, status: "completed" })
-        .eq("id", match.id);
-      if (!ferr) {
-        // Award XP to winner via game_sessions (solo insert, counts toward XP)
-        if (winner) {
-          await supabase.from("game_sessions").insert({
-            user_id: winner,
-            mode: "multiplayer",
-            category_id: match.category_id ?? null,
-            difficulty: match.difficulty ?? "medium",
-            score: winner === l.challenger_id ? l.challenger_score : l.opponent_score,
-            correct_answers: finalCorrect,
-            total_questions: pool.length,
-            xp_earned: 100,
-            duration_seconds: null,
-          });
-        }
+        .from("matches").update({ winner_id: winner, status: "completed" }).eq("id", match.id);
+      if (!ferr && winner) {
+        await supabase.from("game_sessions").insert({
+          user_id: winner,
+          mode: "multiplayer",
+          category_id: match.category_id ?? null,
+          difficulty: match.difficulty ?? "medium",
+          score: winner === l.challenger_id ? l.challenger_score : l.opponent_score,
+          correct_answers: finalCorrect,
+          total_questions: pool.length,
+          xp_earned: 100,
+          duration_seconds: null,
+        });
       }
-      setMatch(l);
+      setMatch({ ...l, winner_id: winner, status: "completed" });
       setWaiting(false);
     } else {
-      // Waiting for opponent
       setMatch(l);
       setWaiting(true);
-
-      // also save my session
       await supabase.from("game_sessions").insert({
         user_id: user.id,
         mode: "multiplayer",
@@ -252,34 +205,71 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
         duration_seconds: null,
       });
     }
-
     onFinished?.();
   };
 
-  // Realtime subscribe for opponent finishing / winner updates
+  // Realtime: notify when opponent finishes
   useEffect(() => {
-    if (!open || !match) return;
+    if (!open || !match || !user) return;
     const channel = supabase
       .channel(`match-${match.id}`)
-      .on(
-        "postgres_changes",
+      .on("postgres_changes",
         { event: "UPDATE", schema: "public", table: "matches", filter: `id=eq.${match.id}` },
         (payload) => {
           const l = payload.new as MatchRow;
-          setMatch(l);
-          if (l.challenger_finished_at && l.opponent_finished_at) {
-            setWaiting(false);
+          const isChallenger = l.challenger_id === user.id;
+          const oppFinishedNow = isChallenger ? !!l.opponent_finished_at : !!l.challenger_finished_at;
+          const oppFinishedBefore = match ? (isChallenger ? !!match.opponent_finished_at : !!match.challenger_finished_at) : false;
+          if (oppFinishedNow && !oppFinishedBefore && !oppNotifiedRef.current) {
+            oppNotifiedRef.current = true;
+            const oppScore = isChallenger ? l.opponent_score : l.challenger_score;
+            toast.success(`الخصم خلّص! نتيجته ${oppScore}`, { description: "بيتم احتساب الفائز..." });
           }
+          setMatch(l);
+          if (l.challenger_finished_at && l.opponent_finished_at) setWaiting(false);
         },
       )
       .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [open, match?.id]);
+    return () => { supabase.removeChannel(channel); };
+  }, [open, match?.id, user?.id]);
 
-  const handleClose = () => {
+  const inProgress = !finished && !loading && pool.length > 0;
+  const tryClose = () => {
+    if (inProgress) {
+      if (!window.confirm("لو خرجت دلوقتي هتخسر تقدمك في المباراة. متأكد؟")) return;
+    } else if (waiting) {
+      if (!window.confirm("نتيجتك اتسجلت. تقفل النافذة وتستنى احتساب الفائز في الخلفية؟")) return;
+    }
     onClose();
+  };
+
+  const rematch = async () => {
+    if (!match || !user) return;
+    const opponentId = match.challenger_id === user.id ? match.opponent_id : match.challenger_id;
+    // pull a fresh random set of questions with the same settings
+    let qids = match.question_ids;
+    if (match.category_id && match.difficulty) {
+      const { data: qs } = await supabase
+        .from("questions").select("id")
+        .eq("category_id", match.category_id)
+        .eq("difficulty", match.difficulty)
+        .eq("is_active", true)
+        .limit(match.questions_count * 3);
+      if (qs && qs.length >= match.questions_count) {
+        qids = qs.sort(() => Math.random() - 0.5).slice(0, match.questions_count).map((q) => q.id);
+      }
+    }
+    const { error } = await supabase.from("matches").insert({
+      challenger_id: user.id,
+      opponent_id: opponentId,
+      category_id: match.category_id,
+      difficulty: match.difficulty,
+      questions_count: match.questions_count,
+      question_ids: qids,
+      status: "pending",
+    });
+    if (error) toast.error("فشل إرسال إعادة المباراة");
+    else { toast.success("اتبعت تحدي إعادة ⚔️"); onFinished?.(); onClose(); }
   };
 
   if (!open) return null;
@@ -288,7 +278,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   const progressPct = total > 0 ? ((index + (revealed ? 1 : 0)) / total) * 100 : 0;
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
+    <Dialog open={open} onOpenChange={(o) => !o && tryClose()}>
       <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
         {loading ? (
           <div className="py-16 flex flex-col items-center gap-3">
@@ -301,7 +291,8 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
             userId={user?.id || ""}
             waiting={waiting}
             myScore={scoreRef.current}
-            onClose={handleClose}
+            onClose={onClose}
+            onRematch={rematch}
           />
         ) : current ? (
           <div className="space-y-4">
@@ -309,8 +300,9 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge className="gap-1"><Swords className="h-3 w-3" /> 1v1</Badge>
                 {match?.difficulty && <Badge variant="outline">{match.difficulty}</Badge>}
+                <Badge variant="secondary">سؤال {index + 1} من {total}</Badge>
               </div>
-              <button onClick={handleClose} className="text-muted-foreground hover:text-foreground">
+              <button onClick={tryClose} className="text-muted-foreground hover:text-foreground">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -327,6 +319,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
             </div>
 
             <Progress value={progressPct} className="h-1.5" />
+            <Progress value={(timeLeft / TIMER) * 100} className={cn("h-1", timeLeft <= 3 && "[&>div]:bg-destructive")} />
 
             <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
               <CardContent className="p-5 md:p-6">
@@ -365,7 +358,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
         ) : (
           <div className="py-12 text-center">
             <p className="text-muted-foreground">لا توجد أسئلة</p>
-            <Button className="mt-4" onClick={handleClose}>إغلاق</Button>
+            <Button className="mt-4" onClick={onClose}>إغلاق</Button>
           </div>
         )}
       </DialogContent>
@@ -373,18 +366,59 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   );
 };
 
+const fmtTime = (iso: string | null | undefined) => {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  } catch { return "—"; }
+};
+
+const EventLog = ({ match, userId }: { match: MatchRow; userId: string }) => {
+  const isChallenger = match.challenger_id === userId;
+  const myFinish = isChallenger ? match.challenger_finished_at : match.opponent_finished_at;
+  const oppFinish = isChallenger ? match.opponent_finished_at : match.challenger_finished_at;
+  const myScore = isChallenger ? match.challenger_score : match.opponent_score;
+  const oppScore = isChallenger ? match.opponent_score : match.challenger_score;
+
+  const events: { time: string | null | undefined; label: string }[] = [
+    { time: match.created_at, label: "🎬 بدأت المباراة" },
+    { time: myFinish, label: `✅ خلصت أنت (نتيجتك ${myScore})` },
+    { time: oppFinish, label: `✅ خلّص الخصم (نتيجته ${oppScore})` },
+  ];
+  if (match.winner_id !== null && match.challenger_finished_at && match.opponent_finished_at) {
+    const wonByMe = match.winner_id === userId;
+    const wlbl = !match.winner_id ? "🤝 تعادل (نفس النتيجة)" : wonByMe ? "🏆 احتُسبت لك (نتيجتك أعلى)" : "💔 فاز الخصم (نتيجته أعلى)";
+    events.push({ time: oppFinish && myFinish ? (new Date(oppFinish) > new Date(myFinish) ? oppFinish : myFinish) : null, label: wlbl });
+  }
+
+  return (
+    <Card className="text-right">
+      <CardContent className="p-3 space-y-2">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
+          <Clock className="h-3 w-3" /> سجل الأحداث
+        </div>
+        <ul className="space-y-1.5">
+          {events.map((e, i) => (
+            <li key={i} className="flex items-center justify-between gap-3 text-xs">
+              <span>{e.label}</span>
+              <span className="font-mono text-muted-foreground">{fmtTime(e.time)}</span>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+};
+
 const MatchResults = ({
-  match,
-  userId,
-  waiting,
-  myScore,
-  onClose,
+  match, userId, waiting, myScore, onClose, onRematch,
 }: {
   match: MatchRow | null;
   userId: string;
   waiting: boolean;
   myScore: number;
   onClose: () => void;
+  onRematch: () => void;
 }) => {
   if (!match) {
     return (
@@ -402,11 +436,10 @@ const MatchResults = ({
   if (waiting || !both) {
     const oppFinished = isChallenger ? !!match.opponent_finished_at : !!match.challenger_finished_at;
     const oppScore = isChallenger ? match.opponent_score : match.challenger_score;
-    const oppFinishedAt = isChallenger ? match.opponent_finished_at : match.challenger_finished_at;
     const myFinishedAt = isChallenger ? match.challenger_finished_at : match.opponent_finished_at;
 
     return (
-      <div className="py-8 text-center space-y-4">
+      <div className="py-6 text-center space-y-4">
         <div className="text-5xl animate-pulse">⏳</div>
         <h2 className="text-xl font-extrabold">خلصت! في انتظار الخصم</h2>
 
@@ -438,6 +471,7 @@ const MatchResults = ({
         </div>
 
         <WaitingTimer since={myFinishedAt} />
+        <EventLog match={match} userId={userId} />
 
         <p className="text-xs text-muted-foreground">
           {oppFinished ? "بيتم احتساب الفائز الآن..." : "الشاشة بتتحدث تلقائياً لما الخصم يجاوب"}
@@ -453,7 +487,7 @@ const MatchResults = ({
   const title = tie ? "تعادل!" : won ? "فزت!" : "خسرت";
 
   return (
-    <div className="py-8 text-center space-y-5">
+    <div className="py-6 text-center space-y-4">
       <div className="text-6xl">{emoji}</div>
       <h2 className="text-2xl font-extrabold">{title}</h2>
       <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
@@ -473,7 +507,15 @@ const MatchResults = ({
         </Card>
       </div>
       {won && <p className="text-sm text-success">+100 XP 🎉</p>}
-      <Button onClick={onClose} className="w-full max-w-xs">تمام</Button>
+
+      <EventLog match={match} userId={userId} />
+
+      <div className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
+        <Button onClick={onRematch} className="flex-1 gap-2">
+          <RotateCcw className="h-4 w-4" /> إعادة المباراة
+        </Button>
+        <Button onClick={onClose} variant="outline" className="flex-1">تمام</Button>
+      </div>
     </div>
   );
 };
