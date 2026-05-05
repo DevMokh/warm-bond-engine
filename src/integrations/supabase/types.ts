@@ -165,12 +165,15 @@ export type Database = {
           category_id: string | null
           challenger_finished_at: string | null
           challenger_id: string
+          challenger_progress: number
           challenger_score: number
           created_at: string
+          current_question_started_at: string | null
           difficulty: Database["public"]["Enums"]["difficulty_level"] | null
           id: string
           opponent_finished_at: string | null
           opponent_id: string
+          opponent_progress: number
           opponent_score: number
           question_ids: string[]
           questions_count: number
@@ -182,12 +185,15 @@ export type Database = {
           category_id?: string | null
           challenger_finished_at?: string | null
           challenger_id: string
+          challenger_progress?: number
           challenger_score?: number
           created_at?: string
+          current_question_started_at?: string | null
           difficulty?: Database["public"]["Enums"]["difficulty_level"] | null
           id?: string
           opponent_finished_at?: string | null
           opponent_id: string
+          opponent_progress?: number
           opponent_score?: number
           question_ids?: string[]
           questions_count?: number
@@ -199,12 +205,15 @@ export type Database = {
           category_id?: string | null
           challenger_finished_at?: string | null
           challenger_id?: string
+          challenger_progress?: number
           challenger_score?: number
           created_at?: string
+          current_question_started_at?: string | null
           difficulty?: Database["public"]["Enums"]["difficulty_level"] | null
           id?: string
           opponent_finished_at?: string | null
           opponent_id?: string
+          opponent_progress?: number
           opponent_score?: number
           question_ids?: string[]
           questions_count?: number
