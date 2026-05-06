@@ -407,10 +407,10 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
                   <Activity className="h-3 w-3" /> تقدم الخصم
                 </span>
                 <span className="font-mono">
-                  {oppFinishedLive ? "خلّص ✅" : `${oppProgress}/${total}`}
+                  {oppFinishedLive ? "خلّص ✅" : `${Math.round(oppPct)}% · سؤال ${oppProgress} من ${total}`}
                 </span>
               </div>
-              <Progress value={oppFinishedLive ? 100 : oppPct} className="h-1 [&>div]:bg-warning" />
+              <Progress value={oppFinishedLive ? 100 : oppPct} className="h-1.5 [&>div]:bg-warning [&>div]:transition-all [&>div]:duration-500" />
             </div>
 
             <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
