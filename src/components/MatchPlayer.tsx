@@ -570,9 +570,9 @@ const MatchResults = ({
               ) : (
                 <>
                   <Loader2 className="h-5 w-5 text-warning mx-auto mb-1 animate-spin" />
-                  <div className="text-lg font-extrabold">{oppProgress}/{totalQs}</div>
-                  <div className="text-[11px] text-muted-foreground">الخصم — بيلعب</div>
-                  <Progress value={oppPct} className="h-1 [&>div]:bg-warning" />
+                  <div className="text-lg font-extrabold">{Math.round(oppPct)}%</div>
+                  <div className="text-[11px] text-muted-foreground">سؤال {oppProgress} من {totalQs}</div>
+                  <Progress value={oppPct} className="h-1.5 [&>div]:bg-warning [&>div]:transition-all [&>div]:duration-500" />
                 </>
               )}
             </CardContent>
