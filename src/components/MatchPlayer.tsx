@@ -680,6 +680,7 @@ const MatchResults = ({
 
         <WaitingTimer since={myFinishedAt} />
         <EventLog match={match} userId={userId} />
+        <RematchEventsLog events={rematchEvents} />
 
         <p className="text-xs text-muted-foreground">
           {oppFinished ? "بيتم احتساب الفائز الآن..." : "الشاشة بتتحدث تلقائياً مع كل سؤال يجاوبه الخصم"}
