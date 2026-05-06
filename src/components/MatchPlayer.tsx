@@ -269,25 +269,42 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     onClose();
   };
 
-  // Check if a pending rematch from me to same opponent already exists
+  // Check if a pending rematch from me to same opponent already exists + realtime sync
   useEffect(() => {
     if (!finished || !match || !user) return;
     let cancelled = false;
-    (async () => {
+    const opponentId = match.challenger_id === user.id ? match.opponent_id : match.challenger_id;
+    const baseTime = match.created_at ?? new Date(0).toISOString();
+
+    const recheck = async () => {
       setRematchChecking(true);
-      const opponentId = match.challenger_id === user.id ? match.opponent_id : match.challenger_id;
       const { data } = await supabase
         .from("matches")
-        .select("id")
+        .select("id, status")
         .eq("challenger_id", user.id)
         .eq("opponent_id", opponentId)
         .eq("status", "pending")
-        .gt("created_at", match.created_at ?? new Date(0).toISOString())
+        .gt("created_at", baseTime)
         .limit(1);
       if (!cancelled) setRematchSent((data ?? []).length > 0);
       setRematchChecking(false);
-    })();
-    return () => { cancelled = true; };
+    };
+    recheck();
+
+    // Realtime: any new/updated match between us flips the rematch button state
+    const channel = supabase
+      .channel(`rematch-${match.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, (payload) => {
+        const row = (payload.new ?? payload.old) as Partial<MatchRow> | null;
+        if (!row) return;
+        const involves =
+          (row.challenger_id === user.id && row.opponent_id === opponentId) ||
+          (row.challenger_id === opponentId && row.opponent_id === user.id);
+        if (involves) recheck();
+      })
+      .subscribe();
+
+    return () => { cancelled = true; supabase.removeChannel(channel); };
   }, [finished, match?.id, user?.id]);
 
   const rematch = async () => {
@@ -346,7 +363,15 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && tryClose()}>
-      <DialogContent className="w-screen h-[100dvh] max-w-none sm:max-w-2xl sm:h-auto sm:max-h-[92vh] overflow-y-auto rounded-none sm:rounded-lg p-4 sm:p-6">
+      <DialogContent
+        className="w-screen h-[100dvh] max-w-none sm:max-w-2xl sm:h-auto sm:max-h-[92vh] overflow-y-auto rounded-none sm:rounded-lg p-4 sm:p-6 landscape:max-h-[100dvh]"
+        style={{
+          paddingTop: "max(1rem, env(safe-area-inset-top))",
+          paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
+          paddingLeft: "max(1rem, env(safe-area-inset-left))",
+          paddingRight: "max(1rem, env(safe-area-inset-right))",
+        }}
+      >
         {loading ? (
           <div className="py-16 flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -399,10 +424,10 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
                   <Activity className="h-3 w-3" /> تقدم الخصم
                 </span>
                 <span className="font-mono">
-                  {oppFinishedLive ? "خلّص ✅" : `${oppProgress}/${total}`}
+                  {oppFinishedLive ? "خلّص ✅" : `${Math.round(oppPct)}% · سؤال ${oppProgress} من ${total}`}
                 </span>
               </div>
-              <Progress value={oppFinishedLive ? 100 : oppPct} className="h-1 [&>div]:bg-warning" />
+              <Progress value={oppFinishedLive ? 100 : oppPct} className="h-1.5 [&>div]:bg-warning [&>div]:transition-all [&>div]:duration-500" />
             </div>
 
             <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
@@ -562,9 +587,9 @@ const MatchResults = ({
               ) : (
                 <>
                   <Loader2 className="h-5 w-5 text-warning mx-auto mb-1 animate-spin" />
-                  <div className="text-lg font-extrabold">{oppProgress}/{totalQs}</div>
-                  <div className="text-[11px] text-muted-foreground">الخصم — بيلعب</div>
-                  <Progress value={oppPct} className="h-1 [&>div]:bg-warning" />
+                  <div className="text-lg font-extrabold">{Math.round(oppPct)}%</div>
+                  <div className="text-[11px] text-muted-foreground">سؤال {oppProgress} من {totalQs}</div>
+                  <Progress value={oppPct} className="h-1.5 [&>div]:bg-warning [&>div]:transition-all [&>div]:duration-500" />
                 </>
               )}
             </CardContent>
