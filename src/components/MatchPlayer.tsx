@@ -393,8 +393,12 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
       question_ids: qids,
       status: "pending",
     });
-    if (error) { toast.error("فشل إرسال إعادة المباراة"); setRematchSent(false); }
-    else { toast.success("اتبعت تحدي إعادة ⚔️"); onFinished?.(); onClose(); }
+    if (error) { toast.error("فشل إرسال إعادة المباراة"); setRematchSent(false); rematchLockRef.current = false; }
+    else {
+      toast.success("اتبعت تحدي إعادة ⚔️");
+      setRematchEvents((ev) => [...ev, { at: new Date().toISOString(), label: "📤 أنت أرسلت طلب إعادة" }]);
+      onFinished?.(); onClose();
+    }
   };
 
   if (!open) return null;
