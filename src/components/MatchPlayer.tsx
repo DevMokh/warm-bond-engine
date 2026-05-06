@@ -316,18 +316,38 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     };
     recheck();
 
-    // Realtime: any new/updated match between us flips the rematch button state
+    // Realtime: any new/updated match between us flips the rematch button state + log events
     const channel = supabase
-      .channel(`rematch-${match.id}`)
+      .channel(`rematch-${match.id}-${rtNonce}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, (payload) => {
         const row = (payload.new ?? payload.old) as Partial<MatchRow> | null;
         if (!row) return;
         const involves =
           (row.challenger_id === user.id && row.opponent_id === opponentId) ||
           (row.challenger_id === opponentId && row.opponent_id === user.id);
-        if (involves) recheck();
+        if (!involves) return;
+        if (row.id === match.id) return; // not a rematch, original
+        const fromMe = row.challenger_id === user.id;
+        const at = new Date().toISOString();
+        if (payload.eventType === "INSERT") {
+          setRematchEvents((ev) => [...ev, { at, label: fromMe ? "📤 أنت أرسلت طلب إعادة" : "📥 الخصم أرسل لك طلب إعادة" }]);
+        } else if (payload.eventType === "UPDATE" && row.status) {
+          const map: Record<string, string> = {
+            active: "✅ تم قبول الإعادة",
+            declined: "❌ تم رفض الإعادة",
+            cancelled: "🚫 تم إلغاء الإعادة",
+            completed: "🏁 انتهت مباراة الإعادة",
+          };
+          const lbl = map[row.status] ?? `حالة الإعادة: ${row.status}`;
+          setRematchEvents((ev) => [...ev, { at, label: lbl }]);
+        }
+        recheck();
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          setRtError("انقطع اتصال التحديثات اللحظية");
+        }
+      });
 
     return () => { cancelled = true; supabase.removeChannel(channel); };
   }, [finished, match?.id, user?.id]);
