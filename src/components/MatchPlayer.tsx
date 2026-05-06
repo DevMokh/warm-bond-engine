@@ -727,11 +727,12 @@ const MatchResults = ({
       )}
 
       <EventLog match={match} userId={userId} tieNote={tie ? tieNote : undefined} />
+      <RematchEventsLog events={rematchEvents} />
 
       <div className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
         <Button onClick={onRematch} disabled={rematchSent || rematchChecking} className="flex-1 gap-2">
           <RotateCcw className="h-4 w-4" />
-          {rematchSent ? "في انتظار رد الخصم" : "إعادة المباراة"}
+          {rematchChecking ? "تحقق..." : rematchSent ? "في انتظار رد الخصم" : "إعادة المباراة"}
         </Button>
         <Button onClick={onClose} variant="outline" className="flex-1">تمام</Button>
       </div>
