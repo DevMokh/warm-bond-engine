@@ -85,8 +85,12 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     setTimeLeft(TIMER); setQuestionStartAt(null);
     setFinished(false); setWaiting(false);
     setRematchSent(false);
+    setRematchEvents([]);
+    setRtError(null);
     savedRef.current = false;
     oppNotifiedRef.current = false;
+    oppProgressMaxRef.current = 0;
+    rematchLockRef.current = false;
 
     (async () => {
       const { data: m, error: me } = await supabase
