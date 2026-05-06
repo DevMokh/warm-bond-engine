@@ -269,25 +269,42 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     onClose();
   };
 
-  // Check if a pending rematch from me to same opponent already exists
+  // Check if a pending rematch from me to same opponent already exists + realtime sync
   useEffect(() => {
     if (!finished || !match || !user) return;
     let cancelled = false;
-    (async () => {
+    const opponentId = match.challenger_id === user.id ? match.opponent_id : match.challenger_id;
+    const baseTime = match.created_at ?? new Date(0).toISOString();
+
+    const recheck = async () => {
       setRematchChecking(true);
-      const opponentId = match.challenger_id === user.id ? match.opponent_id : match.challenger_id;
       const { data } = await supabase
         .from("matches")
-        .select("id")
+        .select("id, status")
         .eq("challenger_id", user.id)
         .eq("opponent_id", opponentId)
         .eq("status", "pending")
-        .gt("created_at", match.created_at ?? new Date(0).toISOString())
+        .gt("created_at", baseTime)
         .limit(1);
       if (!cancelled) setRematchSent((data ?? []).length > 0);
       setRematchChecking(false);
-    })();
-    return () => { cancelled = true; };
+    };
+    recheck();
+
+    // Realtime: any new/updated match between us flips the rematch button state
+    const channel = supabase
+      .channel(`rematch-${match.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, (payload) => {
+        const row = (payload.new ?? payload.old) as Partial<MatchRow> | null;
+        if (!row) return;
+        const involves =
+          (row.challenger_id === user.id && row.opponent_id === opponentId) ||
+          (row.challenger_id === opponentId && row.opponent_id === user.id);
+        if (involves) recheck();
+      })
+      .subscribe();
+
+    return () => { cancelled = true; supabase.removeChannel(channel); };
   }, [finished, match?.id, user?.id]);
 
   const rematch = async () => {
