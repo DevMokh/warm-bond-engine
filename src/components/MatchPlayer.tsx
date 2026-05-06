@@ -346,7 +346,15 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && tryClose()}>
-      <DialogContent className="w-screen h-[100dvh] max-w-none sm:max-w-2xl sm:h-auto sm:max-h-[92vh] overflow-y-auto rounded-none sm:rounded-lg p-4 sm:p-6">
+      <DialogContent
+        className="w-screen h-[100dvh] max-w-none sm:max-w-2xl sm:h-auto sm:max-h-[92vh] overflow-y-auto rounded-none sm:rounded-lg p-4 sm:p-6 landscape:max-h-[100dvh]"
+        style={{
+          paddingTop: "max(1rem, env(safe-area-inset-top))",
+          paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
+          paddingLeft: "max(1rem, env(safe-area-inset-left))",
+          paddingRight: "max(1rem, env(safe-area-inset-right))",
+        }}
+      >
         {loading ? (
           <div className="py-16 flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
