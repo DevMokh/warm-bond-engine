@@ -423,6 +423,14 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
           paddingRight: "max(1rem, env(safe-area-inset-right))",
         }}
       >
+        {rtError && (
+          <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs">
+            <span className="text-destructive font-bold">⚠ {rtError}</span>
+            <Button size="sm" variant="outline" onClick={retryRealtime} className="h-7 text-xs">
+              إعادة المحاولة
+            </Button>
+          </div>
+        )}
         {loading ? (
           <div className="py-16 flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -440,6 +448,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
             onRematch={rematch}
             rematchSent={rematchSent}
             rematchChecking={rematchChecking}
+            rematchEvents={rematchEvents}
           />
         ) : current ? (
           <div className="space-y-4">
