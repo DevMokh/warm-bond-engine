@@ -63,10 +63,15 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   const [waiting, setWaiting] = useState(false);
   const [rematchSent, setRematchSent] = useState(false);
   const [rematchChecking, setRematchChecking] = useState(false);
+  const [rematchEvents, setRematchEvents] = useState<{ at: string; label: string }[]>([]);
+  const [rtError, setRtError] = useState<string | null>(null);
+  const [rtNonce, setRtNonce] = useState(0);
   const savedRef = useRef(false);
   const scoreRef = useRef(0);
   const correctRef = useRef(0);
   const oppNotifiedRef = useRef(false);
+  const oppProgressMaxRef = useRef(0);
+  const rematchLockRef = useRef(false);
 
   useEffect(() => { scoreRef.current = score; }, [score]);
   useEffect(() => { correctRef.current = correct; }, [correct]);
@@ -80,8 +85,12 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     setTimeLeft(TIMER); setQuestionStartAt(null);
     setFinished(false); setWaiting(false);
     setRematchSent(false);
+    setRematchEvents([]);
+    setRtError(null);
     savedRef.current = false;
     oppNotifiedRef.current = false;
+    oppProgressMaxRef.current = 0;
+    rematchLockRef.current = false;
 
     (async () => {
       const { data: m, error: me } = await supabase
@@ -234,16 +243,24 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     onFinished?.();
   };
 
-  // Realtime
+  // Realtime — listens for match updates + reports connection errors
   useEffect(() => {
     if (!open || !match || !user) return;
     const channel = supabase
-      .channel(`match-${match.id}`)
+      .channel(`match-${match.id}-${rtNonce}`)
       .on("postgres_changes",
         { event: "UPDATE", schema: "public", table: "matches", filter: `id=eq.${match.id}` },
         (payload) => {
           const l = payload.new as MatchRow;
           const isCh = l.challenger_id === user.id;
+          // Monotonic clamp: never let opp progress go backwards
+          const incomingOpp = isCh ? l.opponent_progress : l.challenger_progress;
+          if (incomingOpp < oppProgressMaxRef.current) {
+            if (isCh) l.opponent_progress = oppProgressMaxRef.current;
+            else l.challenger_progress = oppProgressMaxRef.current;
+          } else {
+            oppProgressMaxRef.current = incomingOpp;
+          }
           const oppFinishedNow = isCh ? !!l.opponent_finished_at : !!l.challenger_finished_at;
           const oppFinishedBefore = match ? (isCh ? !!match.opponent_finished_at : !!match.challenger_finished_at) : false;
           if (oppFinishedNow && !oppFinishedBefore && !oppNotifiedRef.current) {
@@ -255,9 +272,17 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
           if (l.challenger_finished_at && l.opponent_finished_at) setWaiting(false);
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") setRtError(null);
+        else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          setRtError("انقطع اتصال التحديثات اللحظية");
+        }
+      });
     return () => { supabase.removeChannel(channel); };
-  }, [open, match?.id, user?.id]);
+  }, [open, match?.id, user?.id, rtNonce]);
+
+  const retryRealtime = () => { setRtError(null); setRtNonce((n) => n + 1); };
+
 
   const inProgress = !finished && !loading && pool.length > 0;
   const tryClose = () => {
@@ -291,25 +316,47 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     };
     recheck();
 
-    // Realtime: any new/updated match between us flips the rematch button state
+    // Realtime: any new/updated match between us flips the rematch button state + log events
     const channel = supabase
-      .channel(`rematch-${match.id}`)
+      .channel(`rematch-${match.id}-${rtNonce}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, (payload) => {
         const row = (payload.new ?? payload.old) as Partial<MatchRow> | null;
         if (!row) return;
         const involves =
           (row.challenger_id === user.id && row.opponent_id === opponentId) ||
           (row.challenger_id === opponentId && row.opponent_id === user.id);
-        if (involves) recheck();
+        if (!involves) return;
+        if (row.id === match.id) return; // not a rematch, original
+        const fromMe = row.challenger_id === user.id;
+        const at = new Date().toISOString();
+        if (payload.eventType === "INSERT") {
+          setRematchEvents((ev) => [...ev, { at, label: fromMe ? "📤 أنت أرسلت طلب إعادة" : "📥 الخصم أرسل لك طلب إعادة" }]);
+        } else if (payload.eventType === "UPDATE" && row.status) {
+          const map: Record<string, string> = {
+            active: "✅ تم قبول الإعادة",
+            declined: "❌ تم رفض الإعادة",
+            cancelled: "🚫 تم إلغاء الإعادة",
+            completed: "🏁 انتهت مباراة الإعادة",
+          };
+          const lbl = map[row.status] ?? `حالة الإعادة: ${row.status}`;
+          setRematchEvents((ev) => [...ev, { at, label: lbl }]);
+        }
+        recheck();
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          setRtError("انقطع اتصال التحديثات اللحظية");
+        }
+      });
 
     return () => { cancelled = true; supabase.removeChannel(channel); };
   }, [finished, match?.id, user?.id]);
 
   const rematch = async () => {
-    if (!match || !user || rematchSent) return;
+    if (!match || !user || rematchSent || rematchLockRef.current) return;
+    rematchLockRef.current = true;
     setRematchSent(true);
+    setTimeout(() => { rematchLockRef.current = false; }, 3000);
     const opponentId = match.challenger_id === user.id ? match.opponent_id : match.challenger_id;
 
     // Re-check to prevent double-send race
@@ -346,8 +393,12 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
       question_ids: qids,
       status: "pending",
     });
-    if (error) { toast.error("فشل إرسال إعادة المباراة"); setRematchSent(false); }
-    else { toast.success("اتبعت تحدي إعادة ⚔️"); onFinished?.(); onClose(); }
+    if (error) { toast.error("فشل إرسال إعادة المباراة"); setRematchSent(false); rematchLockRef.current = false; }
+    else {
+      toast.success("اتبعت تحدي إعادة ⚔️");
+      setRematchEvents((ev) => [...ev, { at: new Date().toISOString(), label: "📤 أنت أرسلت طلب إعادة" }]);
+      onFinished?.(); onClose();
+    }
   };
 
   if (!open) return null;
@@ -364,7 +415,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && tryClose()}>
       <DialogContent
-        className="w-screen h-[100dvh] max-w-none sm:max-w-2xl sm:h-auto sm:max-h-[92vh] overflow-y-auto rounded-none sm:rounded-lg p-4 sm:p-6 landscape:max-h-[100dvh]"
+        className="!top-0 !left-0 !translate-x-0 !translate-y-0 sm:!top-[50%] sm:!left-[50%] sm:!translate-x-[-50%] sm:!translate-y-[-50%] w-screen h-[100dvh] max-w-none sm:max-w-2xl sm:h-auto sm:max-h-[92vh] overflow-y-auto rounded-none sm:rounded-lg p-4 sm:p-6"
         style={{
           paddingTop: "max(1rem, env(safe-area-inset-top))",
           paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
@@ -372,6 +423,14 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
           paddingRight: "max(1rem, env(safe-area-inset-right))",
         }}
       >
+        {rtError && (
+          <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs">
+            <span className="text-destructive font-bold">⚠ {rtError}</span>
+            <Button size="sm" variant="outline" onClick={retryRealtime} className="h-7 text-xs">
+              إعادة المحاولة
+            </Button>
+          </div>
+        )}
         {loading ? (
           <div className="py-16 flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -389,6 +448,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
             onRematch={rematch}
             rematchSent={rematchSent}
             rematchChecking={rematchChecking}
+            rematchEvents={rematchEvents}
           />
         ) : current ? (
           <div className="space-y-4">
@@ -529,8 +589,29 @@ const EventLog = ({ match, userId, tieNote }: { match: MatchRow; userId: string;
   );
 };
 
+const RematchEventsLog = ({ events }: { events: { at: string; label: string }[] }) => {
+  if (!events.length) return null;
+  return (
+    <Card className="text-right max-w-md mx-auto">
+      <CardContent className="p-3 space-y-2">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
+          <RotateCcw className="h-3 w-3" /> سجل إعادة المباراة
+        </div>
+        <ul className="space-y-1.5">
+          {events.map((e, i) => (
+            <li key={i} className="flex items-center justify-between gap-3 text-xs">
+              <span>{e.label}</span>
+              <span className="font-mono text-muted-foreground">{fmtTime(e.at)}</span>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+};
+
 const MatchResults = ({
-  match, userId, waiting, myScore, myCorrect, totalQs, onClose, onRematch, rematchSent, rematchChecking,
+  match, userId, waiting, myScore, myCorrect, totalQs, onClose, onRematch, rematchSent, rematchChecking, rematchEvents,
 }: {
   match: MatchRow | null;
   userId: string;
@@ -542,6 +623,7 @@ const MatchResults = ({
   onRematch: () => void;
   rematchSent: boolean;
   rematchChecking: boolean;
+  rematchEvents: { at: string; label: string }[];
 }) => {
   if (!match) {
     return (
@@ -598,6 +680,7 @@ const MatchResults = ({
 
         <WaitingTimer since={myFinishedAt} />
         <EventLog match={match} userId={userId} />
+        <RematchEventsLog events={rematchEvents} />
 
         <p className="text-xs text-muted-foreground">
           {oppFinished ? "بيتم احتساب الفائز الآن..." : "الشاشة بتتحدث تلقائياً مع كل سؤال يجاوبه الخصم"}
@@ -644,11 +727,12 @@ const MatchResults = ({
       )}
 
       <EventLog match={match} userId={userId} tieNote={tie ? tieNote : undefined} />
+      <RematchEventsLog events={rematchEvents} />
 
       <div className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
         <Button onClick={onRematch} disabled={rematchSent || rematchChecking} className="flex-1 gap-2">
           <RotateCcw className="h-4 w-4" />
-          {rematchSent ? "في انتظار رد الخصم" : "إعادة المباراة"}
+          {rematchChecking ? "تحقق..." : rematchSent ? "في انتظار رد الخصم" : "إعادة المباراة"}
         </Button>
         <Button onClick={onClose} variant="outline" className="flex-1">تمام</Button>
       </div>
