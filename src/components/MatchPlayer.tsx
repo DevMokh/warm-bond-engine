@@ -63,10 +63,15 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   const [waiting, setWaiting] = useState(false);
   const [rematchSent, setRematchSent] = useState(false);
   const [rematchChecking, setRematchChecking] = useState(false);
+  const [rematchEvents, setRematchEvents] = useState<{ at: string; label: string }[]>([]);
+  const [rtError, setRtError] = useState<string | null>(null);
+  const [rtNonce, setRtNonce] = useState(0);
   const savedRef = useRef(false);
   const scoreRef = useRef(0);
   const correctRef = useRef(0);
   const oppNotifiedRef = useRef(false);
+  const oppProgressMaxRef = useRef(0);
+  const rematchLockRef = useRef(false);
 
   useEffect(() => { scoreRef.current = score; }, [score]);
   useEffect(() => { correctRef.current = correct; }, [correct]);
