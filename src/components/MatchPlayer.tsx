@@ -353,8 +353,10 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   }, [finished, match?.id, user?.id]);
 
   const rematch = async () => {
-    if (!match || !user || rematchSent) return;
+    if (!match || !user || rematchSent || rematchLockRef.current) return;
+    rematchLockRef.current = true;
     setRematchSent(true);
+    setTimeout(() => { rematchLockRef.current = false; }, 3000);
     const opponentId = match.challenger_id === user.id ? match.opponent_id : match.challenger_id;
 
     // Re-check to prevent double-send race
