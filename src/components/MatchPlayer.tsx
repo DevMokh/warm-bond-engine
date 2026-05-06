@@ -589,8 +589,29 @@ const EventLog = ({ match, userId, tieNote }: { match: MatchRow; userId: string;
   );
 };
 
+const RematchEventsLog = ({ events }: { events: { at: string; label: string }[] }) => {
+  if (!events.length) return null;
+  return (
+    <Card className="text-right max-w-md mx-auto">
+      <CardContent className="p-3 space-y-2">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
+          <RotateCcw className="h-3 w-3" /> سجل إعادة المباراة
+        </div>
+        <ul className="space-y-1.5">
+          {events.map((e, i) => (
+            <li key={i} className="flex items-center justify-between gap-3 text-xs">
+              <span>{e.label}</span>
+              <span className="font-mono text-muted-foreground">{fmtTime(e.at)}</span>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+};
+
 const MatchResults = ({
-  match, userId, waiting, myScore, myCorrect, totalQs, onClose, onRematch, rematchSent, rematchChecking,
+  match, userId, waiting, myScore, myCorrect, totalQs, onClose, onRematch, rematchSent, rematchChecking, rematchEvents,
 }: {
   match: MatchRow | null;
   userId: string;
@@ -602,6 +623,7 @@ const MatchResults = ({
   onRematch: () => void;
   rematchSent: boolean;
   rematchChecking: boolean;
+  rematchEvents: { at: string; label: string }[];
 }) => {
   if (!match) {
     return (
