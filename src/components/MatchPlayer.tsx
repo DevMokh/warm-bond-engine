@@ -364,7 +364,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && tryClose()}>
       <DialogContent
-        className="w-screen h-[100dvh] max-w-none sm:max-w-2xl sm:h-auto sm:max-h-[92vh] overflow-y-auto rounded-none sm:rounded-lg p-4 sm:p-6 landscape:max-h-[100dvh]"
+        className="!top-0 !left-0 !translate-x-0 !translate-y-0 sm:!top-[50%] sm:!left-[50%] sm:!translate-x-[-50%] sm:!translate-y-[-50%] w-screen h-[100dvh] max-w-none sm:max-w-2xl sm:h-auto sm:max-h-[92vh] overflow-y-auto rounded-none sm:rounded-lg p-4 sm:p-6"
         style={{
           paddingTop: "max(1rem, env(safe-area-inset-top))",
           paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
