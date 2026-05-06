@@ -243,16 +243,24 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     onFinished?.();
   };
 
-  // Realtime
+  // Realtime — listens for match updates + reports connection errors
   useEffect(() => {
     if (!open || !match || !user) return;
     const channel = supabase
-      .channel(`match-${match.id}`)
+      .channel(`match-${match.id}-${rtNonce}`)
       .on("postgres_changes",
         { event: "UPDATE", schema: "public", table: "matches", filter: `id=eq.${match.id}` },
         (payload) => {
           const l = payload.new as MatchRow;
           const isCh = l.challenger_id === user.id;
+          // Monotonic clamp: never let opp progress go backwards
+          const incomingOpp = isCh ? l.opponent_progress : l.challenger_progress;
+          if (incomingOpp < oppProgressMaxRef.current) {
+            if (isCh) l.opponent_progress = oppProgressMaxRef.current;
+            else l.challenger_progress = oppProgressMaxRef.current;
+          } else {
+            oppProgressMaxRef.current = incomingOpp;
+          }
           const oppFinishedNow = isCh ? !!l.opponent_finished_at : !!l.challenger_finished_at;
           const oppFinishedBefore = match ? (isCh ? !!match.opponent_finished_at : !!match.challenger_finished_at) : false;
           if (oppFinishedNow && !oppFinishedBefore && !oppNotifiedRef.current) {
@@ -264,9 +272,17 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
           if (l.challenger_finished_at && l.opponent_finished_at) setWaiting(false);
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") setRtError(null);
+        else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          setRtError("انقطع اتصال التحديثات اللحظية");
+        }
+      });
     return () => { supabase.removeChannel(channel); };
-  }, [open, match?.id, user?.id]);
+  }, [open, match?.id, user?.id, rtNonce]);
+
+  const retryRealtime = () => { setRtError(null); setRtNonce((n) => n + 1); };
+
 
   const inProgress = !finished && !loading && pool.length > 0;
   const tryClose = () => {
