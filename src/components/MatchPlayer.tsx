@@ -169,10 +169,24 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     if (revealed || !current || !match || !user) return;
     setSelected(optIdx);
     setRevealed(true);
-    if (optIdx === current.correct_answer) {
+    tickedRef.current = -1;
+    const isRight = optIdx === current.correct_answer;
+    if (isRight) {
       setCorrect((c) => c + 1);
       const bonus = current.difficulty === "hard" ? 30 : current.difficulty === "medium" ? 20 : 10;
-      setScore((s) => s + bonus + Math.max(0, timeLeft));
+      const newStreak = streak + 1;
+      // Streak bonus: +5 per question on streak 3+
+      const streakBonus = newStreak >= 3 ? newStreak * 5 : 0;
+      setScore((s) => s + bonus + Math.max(0, timeLeft) + streakBonus);
+      setStreak(newStreak);
+      setMaxStreak((m) => Math.max(m, newStreak));
+      if (newStreak >= 3) toast.success(`🔥 Streak ${newStreak}! +${streakBonus} bonus`, { duration: 1500 });
+      play("correct", 0.5);
+      try { navigator.vibrate?.(40); } catch {}
+    } else {
+      setStreak(0);
+      play("wrong", 0.5);
+      try { navigator.vibrate?.([30, 60, 30]); } catch {}
     }
     // Save progress live so opponent sees it
     const newProgress = index + 1;
