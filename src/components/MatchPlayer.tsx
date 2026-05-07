@@ -415,14 +415,15 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && tryClose()}>
       <DialogContent
-        className="!top-0 !left-0 !translate-x-0 !translate-y-0 sm:!top-[50%] sm:!left-[50%] sm:!translate-x-[-50%] sm:!translate-y-[-50%] w-screen h-[100dvh] max-w-none sm:max-w-2xl sm:h-auto sm:max-h-[92vh] overflow-y-auto rounded-none sm:rounded-lg p-4 sm:p-6"
+        className="!fixed !inset-0 !top-0 !left-0 !translate-x-0 !translate-y-0 w-screen h-[100svh] max-w-none rounded-none border-0 p-0 gap-0 overflow-hidden sm:!inset-auto sm:!top-[50%] sm:!left-[50%] sm:!translate-x-[-50%] sm:!translate-y-[-50%] sm:w-full sm:max-w-2xl sm:h-auto sm:max-h-[92vh] sm:rounded-lg sm:border"
         style={{
-          paddingTop: "max(1rem, env(safe-area-inset-top))",
-          paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
-          paddingLeft: "max(1rem, env(safe-area-inset-left))",
-          paddingRight: "max(1rem, env(safe-area-inset-right))",
+          paddingTop: "env(safe-area-inset-top)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+          paddingLeft: "env(safe-area-inset-left)",
+          paddingRight: "env(safe-area-inset-right)",
         }}
       >
+        <div className="h-full w-full overflow-y-auto overscroll-contain p-4 sm:p-6">
         {rtError && (
           <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs">
             <span className="text-destructive font-bold">⚠ {rtError}</span>
