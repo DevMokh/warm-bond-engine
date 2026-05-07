@@ -612,6 +612,14 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
               <div className="flex items-center gap-3">
                 <span className="font-bold">{index + 1} / {total}</span>
                 <span className="text-primary font-bold">⭐ {score}</span>
+                {streak >= 2 && (
+                  <span className={cn(
+                    "flex items-center gap-1 font-bold px-2 py-0.5 rounded-full text-xs",
+                    streak >= 5 ? "bg-destructive/20 text-destructive animate-pulse" : "bg-warning/20 text-warning"
+                  )}>
+                    <Flame className="h-3 w-3" /> {streak}
+                  </span>
+                )}
               </div>
               <div className={cn("flex items-center gap-1 font-bold", timeLeft <= 3 && "text-destructive animate-pulse")}>
                 <Timer className="h-4 w-4" />
