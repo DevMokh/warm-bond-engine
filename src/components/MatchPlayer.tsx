@@ -67,12 +67,19 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   const [rematchEvents, setRematchEvents] = useState<{ at: string; label: string }[]>([]);
   const [rtError, setRtError] = useState<string | null>(null);
   const [rtNonce, setRtNonce] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [maxStreak, setMaxStreak] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const dialogContentRef = useRef<HTMLDivElement | null>(null);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  const tickedRef = useRef<number>(-1);
   const savedRef = useRef(false);
   const scoreRef = useRef(0);
   const correctRef = useRef(0);
   const oppNotifiedRef = useRef(false);
   const oppProgressMaxRef = useRef(0);
   const rematchLockRef = useRef(false);
+  const { muted, setMuted, play } = useGameSounds(["tick", "win", "lose", "correct", "wrong"]);
 
   useEffect(() => { scoreRef.current = score; }, [score]);
   useEffect(() => { correctRef.current = correct; }, [correct]);
