@@ -531,6 +531,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
             <Button className="mt-4" onClick={onClose}>إغلاق</Button>
           </div>
         )}
+        </div>
       </DialogContent>
     </Dialog>
   );
