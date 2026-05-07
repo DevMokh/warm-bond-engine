@@ -310,6 +310,94 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
 
   const retryRealtime = () => { setRtError(null); setRtNonce((n) => n + 1); };
 
+  // Wake Lock: prevent screen sleep during match
+  useEffect(() => {
+    if (!open || finished) return;
+    const nav = navigator as Navigator & { wakeLock?: { request: (t: "screen") => Promise<WakeLockSentinel> } };
+    if (!nav.wakeLock) return;
+    let cancelled = false;
+    nav.wakeLock.request("screen").then((w) => {
+      if (cancelled) { w.release().catch(() => {}); return; }
+      wakeLockRef.current = w;
+    }).catch(() => {});
+    const onVis = () => {
+      if (document.visibilityState === "visible" && !wakeLockRef.current) {
+        nav.wakeLock!.request("screen").then((w) => { wakeLockRef.current = w; }).catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", onVis);
+      wakeLockRef.current?.release().catch(() => {});
+      wakeLockRef.current = null;
+    };
+  }, [open, finished]);
+
+  // Win/Lose sound when match fully resolved
+  useEffect(() => {
+    if (!finished || !match || !user || !match.winner_id) return;
+    if (match.challenger_finished_at && match.opponent_finished_at) {
+      if (match.winner_id === user.id) play("win", 0.7);
+      else play("lose", 0.6);
+    }
+  }, [finished, match?.winner_id, match?.challenger_finished_at, match?.opponent_finished_at, user?.id, play, match]);
+
+  // Fullscreen toggle
+  const toggleFullscreen = useCallback(async () => {
+    const el = dialogContentRef.current;
+    if (!el) return;
+    try {
+      if (!document.fullscreenElement) {
+        await el.requestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    } catch {}
+  }, []);
+  useEffect(() => {
+    const onFs = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFs);
+    return () => document.removeEventListener("fullscreenchange", onFs);
+  }, []);
+
+  // Share result as image (canvas → blob)
+  const shareResult = useCallback(async () => {
+    if (!match || !user) return;
+    const isCh = match.challenger_id === user.id;
+    const myScore = isCh ? match.challenger_score : match.opponent_score;
+    const oppScore = isCh ? match.opponent_score : match.challenger_score;
+    const won = match.winner_id === user.id;
+    const tie = match.challenger_finished_at && match.opponent_finished_at && !match.winner_id;
+    const canvas = document.createElement("canvas");
+    canvas.width = 800; canvas.height = 800;
+    const ctx = canvas.getContext("2d")!;
+    const grad = ctx.createLinearGradient(0, 0, 800, 800);
+    grad.addColorStop(0, won ? "#16a34a" : tie ? "#a16207" : "#7c3aed");
+    grad.addColorStop(1, won ? "#065f46" : tie ? "#422006" : "#1e1b4b");
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, 800, 800);
+    ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.direction = "rtl";
+    ctx.font = "bold 80px system-ui"; ctx.fillText(tie ? "تعادل" : won ? "فوز!" : "خسارة", 400, 200);
+    ctx.font = "bold 200px system-ui"; ctx.fillText(`${myScore} - ${oppScore}`, 400, 450);
+    ctx.font = "40px system-ui"; ctx.fillText(`Streak: ${maxStreak} 🔥`, 400, 550);
+    ctx.font = "32px system-ui"; ctx.fillText("تحدي 1v1", 400, 720);
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+      const file = new File([blob], "match-result.png", { type: "image/png" });
+      const navWithShare = navigator as Navigator & { canShare?: (d: ShareData) => boolean; share?: (d: ShareData) => Promise<void> };
+      if (navWithShare.canShare?.({ files: [file] }) && navWithShare.share) {
+        try { await navWithShare.share({ files: [file], title: "نتيجة المباراة" }); return; } catch {}
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = "match-result.png"; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success("تم تنزيل صورة النتيجة");
+    }, "image/png");
+  }, [match, user, maxStreak]);
+
+
 
   const inProgress = !finished && !loading && pool.length > 0;
   const tryClose = () => {
