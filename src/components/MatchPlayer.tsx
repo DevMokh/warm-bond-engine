@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Timer, Trophy, X, Check, Swords, RotateCcw, Clock, Activity } from "lucide-react";
+import { Loader2, Timer, Trophy, X, Check, Swords, RotateCcw, Clock, Activity, Volume2, VolumeX, Maximize2, Minimize2, Flame, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useGameSounds } from "@/hooks/useGameSounds";
 
 type Question = {
   id: string;
@@ -66,12 +67,19 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   const [rematchEvents, setRematchEvents] = useState<{ at: string; label: string }[]>([]);
   const [rtError, setRtError] = useState<string | null>(null);
   const [rtNonce, setRtNonce] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [maxStreak, setMaxStreak] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const dialogContentRef = useRef<HTMLDivElement | null>(null);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  const tickedRef = useRef<number>(-1);
   const savedRef = useRef(false);
   const scoreRef = useRef(0);
   const correctRef = useRef(0);
   const oppNotifiedRef = useRef(false);
   const oppProgressMaxRef = useRef(0);
   const rematchLockRef = useRef(false);
+  const { muted, setMuted, play } = useGameSounds(["tick", "win", "lose", "correct", "wrong"]);
 
   useEffect(() => { scoreRef.current = score; }, [score]);
   useEffect(() => { correctRef.current = correct; }, [correct]);
@@ -135,6 +143,11 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
       const elapsed = Math.floor((Date.now() - questionStartAt) / 1000);
       const left = Math.max(0, TIMER - elapsed);
       setTimeLeft(left);
+      // play tick sound for last 5 seconds (once per second)
+      if (left > 0 && left <= 5 && tickedRef.current !== left) {
+        tickedRef.current = left;
+        play("tick", 0.4);
+      }
       if (left <= 0) handleAnswer(-1);
     };
     tick();
@@ -156,10 +169,24 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     if (revealed || !current || !match || !user) return;
     setSelected(optIdx);
     setRevealed(true);
-    if (optIdx === current.correct_answer) {
+    tickedRef.current = -1;
+    const isRight = optIdx === current.correct_answer;
+    if (isRight) {
       setCorrect((c) => c + 1);
       const bonus = current.difficulty === "hard" ? 30 : current.difficulty === "medium" ? 20 : 10;
-      setScore((s) => s + bonus + Math.max(0, timeLeft));
+      const newStreak = streak + 1;
+      // Streak bonus: +5 per question on streak 3+
+      const streakBonus = newStreak >= 3 ? newStreak * 5 : 0;
+      setScore((s) => s + bonus + Math.max(0, timeLeft) + streakBonus);
+      setStreak(newStreak);
+      setMaxStreak((m) => Math.max(m, newStreak));
+      if (newStreak >= 3) toast.success(`🔥 Streak ${newStreak}! +${streakBonus} bonus`, { duration: 1500 });
+      play("correct", 0.5);
+      try { navigator.vibrate?.(40); } catch {}
+    } else {
+      setStreak(0);
+      play("wrong", 0.5);
+      try { navigator.vibrate?.([30, 60, 30]); } catch {}
     }
     // Save progress live so opponent sees it
     const newProgress = index + 1;
@@ -282,6 +309,94 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   }, [open, match?.id, user?.id, rtNonce]);
 
   const retryRealtime = () => { setRtError(null); setRtNonce((n) => n + 1); };
+
+  // Wake Lock: prevent screen sleep during match
+  useEffect(() => {
+    if (!open || finished) return;
+    const nav = navigator as Navigator & { wakeLock?: { request: (t: "screen") => Promise<WakeLockSentinel> } };
+    if (!nav.wakeLock) return;
+    let cancelled = false;
+    nav.wakeLock.request("screen").then((w) => {
+      if (cancelled) { w.release().catch(() => {}); return; }
+      wakeLockRef.current = w;
+    }).catch(() => {});
+    const onVis = () => {
+      if (document.visibilityState === "visible" && !wakeLockRef.current) {
+        nav.wakeLock!.request("screen").then((w) => { wakeLockRef.current = w; }).catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", onVis);
+      wakeLockRef.current?.release().catch(() => {});
+      wakeLockRef.current = null;
+    };
+  }, [open, finished]);
+
+  // Win/Lose sound when match fully resolved
+  useEffect(() => {
+    if (!finished || !match || !user || !match.winner_id) return;
+    if (match.challenger_finished_at && match.opponent_finished_at) {
+      if (match.winner_id === user.id) play("win", 0.7);
+      else play("lose", 0.6);
+    }
+  }, [finished, match?.winner_id, match?.challenger_finished_at, match?.opponent_finished_at, user?.id, play, match]);
+
+  // Fullscreen toggle
+  const toggleFullscreen = useCallback(async () => {
+    const el = dialogContentRef.current;
+    if (!el) return;
+    try {
+      if (!document.fullscreenElement) {
+        await el.requestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    } catch {}
+  }, []);
+  useEffect(() => {
+    const onFs = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFs);
+    return () => document.removeEventListener("fullscreenchange", onFs);
+  }, []);
+
+  // Share result as image (canvas → blob)
+  const shareResult = useCallback(async () => {
+    if (!match || !user) return;
+    const isCh = match.challenger_id === user.id;
+    const myScore = isCh ? match.challenger_score : match.opponent_score;
+    const oppScore = isCh ? match.opponent_score : match.challenger_score;
+    const won = match.winner_id === user.id;
+    const tie = match.challenger_finished_at && match.opponent_finished_at && !match.winner_id;
+    const canvas = document.createElement("canvas");
+    canvas.width = 800; canvas.height = 800;
+    const ctx = canvas.getContext("2d")!;
+    const grad = ctx.createLinearGradient(0, 0, 800, 800);
+    grad.addColorStop(0, won ? "#16a34a" : tie ? "#a16207" : "#7c3aed");
+    grad.addColorStop(1, won ? "#065f46" : tie ? "#422006" : "#1e1b4b");
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, 800, 800);
+    ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.direction = "rtl";
+    ctx.font = "bold 80px system-ui"; ctx.fillText(tie ? "تعادل" : won ? "فوز!" : "خسارة", 400, 200);
+    ctx.font = "bold 200px system-ui"; ctx.fillText(`${myScore} - ${oppScore}`, 400, 450);
+    ctx.font = "40px system-ui"; ctx.fillText(`Streak: ${maxStreak} 🔥`, 400, 550);
+    ctx.font = "32px system-ui"; ctx.fillText("تحدي 1v1", 400, 720);
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+      const file = new File([blob], "match-result.png", { type: "image/png" });
+      const navWithShare = navigator as Navigator & { canShare?: (d: ShareData) => boolean; share?: (d: ShareData) => Promise<void> };
+      if (navWithShare.canShare?.({ files: [file] }) && navWithShare.share) {
+        try { await navWithShare.share({ files: [file], title: "نتيجة المباراة" }); return; } catch {}
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = "match-result.png"; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success("تم تنزيل صورة النتيجة");
+    }, "image/png");
+  }, [match, user, maxStreak]);
+
 
 
   const inProgress = !finished && !loading && pool.length > 0;
@@ -415,6 +530,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && tryClose()}>
       <DialogContent
+        ref={dialogContentRef}
         className="!fixed !inset-0 !top-0 !left-0 !translate-x-0 !translate-y-0 w-screen h-[100svh] max-w-none rounded-none border-0 p-0 gap-0 overflow-hidden sm:!inset-auto sm:!top-[50%] sm:!left-[50%] sm:!translate-x-[-50%] sm:!translate-y-[-50%] sm:w-full sm:max-w-2xl sm:h-auto sm:max-h-[92vh] sm:rounded-lg sm:border"
         style={{
           paddingTop: "env(safe-area-inset-top)",
@@ -423,7 +539,35 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
           paddingRight: "env(safe-area-inset-right)",
         }}
       >
-        <div className="h-full w-full overflow-y-auto overscroll-contain p-4 sm:p-6">
+        {/* Floating control bar (mute / fullscreen) */}
+        <div className="absolute z-10 flex gap-1 left-12 top-3 sm:left-14 sm:top-4">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => setMuted(!muted)}
+            className="h-8 w-8"
+            aria-label={muted ? "تشغيل الصوت" : "كتم الصوت"}
+            title={muted ? "تشغيل الصوت" : "كتم الصوت"}
+          >
+            {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={toggleFullscreen}
+            className="h-8 w-8 hidden sm:inline-flex"
+            aria-label="ملء الشاشة"
+            title="ملء الشاشة"
+          >
+            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </Button>
+          {finished && match?.winner_id && (
+            <Button size="icon" variant="ghost" onClick={shareResult} className="h-8 w-8" title="مشاركة النتيجة">
+              <Share2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        <div className="h-full w-full overflow-y-auto overscroll-contain p-4 sm:p-6 pt-12 sm:pt-14">
         {rtError && (
           <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs">
             <span className="text-destructive font-bold">⚠ {rtError}</span>
@@ -468,6 +612,14 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
               <div className="flex items-center gap-3">
                 <span className="font-bold">{index + 1} / {total}</span>
                 <span className="text-primary font-bold">⭐ {score}</span>
+                {streak >= 2 && (
+                  <span className={cn(
+                    "flex items-center gap-1 font-bold px-2 py-0.5 rounded-full text-xs",
+                    streak >= 5 ? "bg-destructive/20 text-destructive animate-pulse" : "bg-warning/20 text-warning"
+                  )}>
+                    <Flame className="h-3 w-3" /> {streak}
+                  </span>
+                )}
               </div>
               <div className={cn("flex items-center gap-1 font-bold", timeLeft <= 3 && "text-destructive animate-pulse")}>
                 <Timer className="h-4 w-4" />
