@@ -530,6 +530,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && tryClose()}>
       <DialogContent
+        ref={dialogContentRef}
         className="!fixed !inset-0 !top-0 !left-0 !translate-x-0 !translate-y-0 w-screen h-[100svh] max-w-none rounded-none border-0 p-0 gap-0 overflow-hidden sm:!inset-auto sm:!top-[50%] sm:!left-[50%] sm:!translate-x-[-50%] sm:!translate-y-[-50%] sm:w-full sm:max-w-2xl sm:h-auto sm:max-h-[92vh] sm:rounded-lg sm:border"
         style={{
           paddingTop: "env(safe-area-inset-top)",
@@ -538,7 +539,35 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
           paddingRight: "env(safe-area-inset-right)",
         }}
       >
-        <div className="h-full w-full overflow-y-auto overscroll-contain p-4 sm:p-6">
+        {/* Floating control bar (mute / fullscreen) */}
+        <div className="absolute z-10 flex gap-1 left-12 top-3 sm:left-14 sm:top-4">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => setMuted(!muted)}
+            className="h-8 w-8"
+            aria-label={muted ? "تشغيل الصوت" : "كتم الصوت"}
+            title={muted ? "تشغيل الصوت" : "كتم الصوت"}
+          >
+            {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={toggleFullscreen}
+            className="h-8 w-8 hidden sm:inline-flex"
+            aria-label="ملء الشاشة"
+            title="ملء الشاشة"
+          >
+            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </Button>
+          {finished && match?.winner_id && (
+            <Button size="icon" variant="ghost" onClick={shareResult} className="h-8 w-8" title="مشاركة النتيجة">
+              <Share2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        <div className="h-full w-full overflow-y-auto overscroll-contain p-4 sm:p-6 pt-12 sm:pt-14">
         {rtError && (
           <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs">
             <span className="text-destructive font-bold">⚠ {rtError}</span>
