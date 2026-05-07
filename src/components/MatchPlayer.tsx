@@ -143,6 +143,11 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
       const elapsed = Math.floor((Date.now() - questionStartAt) / 1000);
       const left = Math.max(0, TIMER - elapsed);
       setTimeLeft(left);
+      // play tick sound for last 5 seconds (once per second)
+      if (left > 0 && left <= 5 && tickedRef.current !== left) {
+        tickedRef.current = left;
+        play("tick", 0.4);
+      }
       if (left <= 0) handleAnswer(-1);
     };
     tick();
