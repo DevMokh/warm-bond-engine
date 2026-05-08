@@ -192,7 +192,8 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     if (!user) return;
     try {
       await supabase.from("match_events").insert([{
-        match_id: mid, user_id: user.id, event_type: type, payload, question_index: qIdx ?? undefined,
+        match_id: mid, user_id: user.id, event_type: type,
+        payload: payload as never, question_index: qIdx ?? undefined,
       }]);
     } catch {}
   };
