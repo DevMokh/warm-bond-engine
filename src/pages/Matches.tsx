@@ -207,6 +207,16 @@ const Matches = () => {
                 </Select>
               </div>
               <div><Label>عدد الأسئلة</Label><Input type="number" min={3} max={20} value={form.questions_count} onChange={(e) => setForm({ ...form, questions_count: +e.target.value })} /></div>
+              <div>
+                <Label>نوع المباراة</Label>
+                <Select value={String(form.best_of)} onValueChange={(v) => setForm({ ...form, best_of: +v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">مباراة عادية</SelectItem>
+                    <SelectItem value="3">Best-of-3 (أفضل 2 من 3)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Button onClick={challenge} className="w-full">إرسال التحدي</Button>
             </div>
           </DialogContent>
