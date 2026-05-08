@@ -192,10 +192,13 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
       const newStreak = streak + 1;
       // Streak bonus: +5 per question on streak 3+
       const streakBonus = newStreak >= 3 ? newStreak * 5 : 0;
-      setScore((s) => s + bonus + Math.max(0, timeLeft) + streakBonus);
+      const baseGain = bonus + Math.max(0, timeLeft) + streakBonus;
+      const finalGain = doubleActive ? baseGain * 2 : baseGain;
+      setScore((s) => s + finalGain);
       setStreak(newStreak);
       setMaxStreak((m) => Math.max(m, newStreak));
-      if (newStreak >= 3) toast.success(`🔥 Streak ${newStreak}! +${streakBonus} bonus`, { duration: 1500 });
+      if (doubleActive) toast.success(`✨ Double Points! +${finalGain}`, { duration: 1500 });
+      else if (newStreak >= 3) toast.success(`🔥 Streak ${newStreak}! +${streakBonus} bonus`, { duration: 1500 });
       play("correct", 0.5);
       try { navigator.vibrate?.(40); } catch {}
     } else {
