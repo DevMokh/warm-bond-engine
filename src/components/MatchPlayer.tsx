@@ -459,6 +459,35 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
 
   const retryRealtime = () => { setRtError(null); setRtNonce((n) => n + 1); };
 
+  // Listen to opponent's events (power-ups → flash banner)
+  useEffect(() => {
+    if (!open || !match || !user) return;
+    const ch = supabase
+      .channel(`match-events-${match.id}`)
+      .on("postgres_changes",
+        { event: "INSERT", schema: "public", table: "match_events", filter: `match_id=eq.${match.id}` },
+        (p) => {
+          const ev = p.new as { user_id: string; event_type: string };
+          if (ev.user_id === user.id) return;
+          if (ev.event_type === "powerup_5050") {
+            setOppPuFlash({ type: "✂️ الخصم استخدم 50/50", at: Date.now() });
+          } else if (ev.event_type === "powerup_freeze") {
+            setOppPuFlash({ type: "❄️ الخصم جمّد وقته", at: Date.now() });
+          } else if (ev.event_type === "powerup_double") {
+            setOppPuFlash({ type: "✨ الخصم فعّل Double Points", at: Date.now() });
+          }
+        })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [open, match?.id, user?.id]);
+
+  // Auto-clear opp power-up flash
+  useEffect(() => {
+    if (!oppPuFlash) return;
+    const t = setTimeout(() => setOppPuFlash(null), 3000);
+    return () => clearTimeout(t);
+  }, [oppPuFlash]);
+
   // Wake Lock: prevent screen sleep during match
   useEffect(() => {
     if (!open || finished) return;
