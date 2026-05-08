@@ -160,8 +160,39 @@ export type Database = {
           },
         ]
       }
+      match_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          match_id: string
+          payload: Json
+          question_index: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          match_id: string
+          payload?: Json
+          question_index?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          match_id?: string
+          payload?: Json
+          question_index?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       matches: {
         Row: {
+          best_of: number
           category_id: string | null
           challenger_finished_at: string | null
           challenger_id: string
@@ -171,17 +202,21 @@ export type Database = {
           current_question_started_at: string | null
           difficulty: Database["public"]["Enums"]["difficulty_level"] | null
           id: string
+          is_public_spectate: boolean
           opponent_finished_at: string | null
           opponent_id: string
           opponent_progress: number
           opponent_score: number
           question_ids: string[]
           questions_count: number
+          round_number: number
+          series_id: string | null
           status: Database["public"]["Enums"]["match_status"]
           updated_at: string
           winner_id: string | null
         }
         Insert: {
+          best_of?: number
           category_id?: string | null
           challenger_finished_at?: string | null
           challenger_id: string
@@ -191,17 +226,21 @@ export type Database = {
           current_question_started_at?: string | null
           difficulty?: Database["public"]["Enums"]["difficulty_level"] | null
           id?: string
+          is_public_spectate?: boolean
           opponent_finished_at?: string | null
           opponent_id: string
           opponent_progress?: number
           opponent_score?: number
           question_ids?: string[]
           questions_count?: number
+          round_number?: number
+          series_id?: string | null
           status?: Database["public"]["Enums"]["match_status"]
           updated_at?: string
           winner_id?: string | null
         }
         Update: {
+          best_of?: number
           category_id?: string | null
           challenger_finished_at?: string | null
           challenger_id?: string
@@ -211,12 +250,15 @@ export type Database = {
           current_question_started_at?: string | null
           difficulty?: Database["public"]["Enums"]["difficulty_level"] | null
           id?: string
+          is_public_spectate?: boolean
           opponent_finished_at?: string | null
           opponent_id?: string
           opponent_progress?: number
           opponent_score?: number
           question_ids?: string[]
           questions_count?: number
+          round_number?: number
+          series_id?: string | null
           status?: Database["public"]["Enums"]["match_status"]
           updated_at?: string
           winner_id?: string | null
