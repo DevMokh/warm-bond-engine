@@ -145,14 +145,20 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     return () => { cancelled = true; };
   }, [open, matchId, user]);
 
-  // Server-synced per-question timer
+  // Server-synced per-question timer (with optional Freeze pause)
   useEffect(() => {
     if (!open || loading || finished || revealed || !pool.length || questionStartAt == null) return;
     const tick = () => {
-      const elapsed = Math.floor((Date.now() - questionStartAt) / 1000);
-      const left = Math.max(0, TIMER - elapsed);
+      // Freeze power-up: extend deadline by frozen duration
+      const freezeBonus = freezeUntil ? Math.max(0, Math.min(freezeUntil, Date.now()) - questionStartAt) / 1000 : 0;
+      const elapsed = Math.floor((Date.now() - questionStartAt) / 1000) - Math.floor(freezeBonus);
+      if (freezeUntil && Date.now() < freezeUntil) {
+        // paused: show frozen time, no countdown
+        setTimeLeft((prev) => prev);
+        return;
+      }
+      const left = Math.max(0, TIMER - Math.max(0, elapsed));
       setTimeLeft(left);
-      // play tick sound for last 5 seconds (once per second)
       if (left > 0 && left <= 5 && tickedRef.current !== left) {
         tickedRef.current = left;
         play("tick", 0.4);
@@ -163,7 +169,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     const id = setInterval(tick, 250);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [questionStartAt, open, loading, finished, revealed, pool.length]);
+  }, [questionStartAt, open, loading, finished, revealed, pool.length, freezeUntil]);
 
   const current = pool[index];
 
