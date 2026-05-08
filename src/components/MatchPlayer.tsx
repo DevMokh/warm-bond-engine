@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Timer, Trophy, X, Check, Swords, RotateCcw, Clock, Activity, Volume2, VolumeX, Maximize2, Minimize2, Flame, Share2, Scissors, Snowflake, Sparkles } from "lucide-react";
+import { Loader2, Timer, Trophy, X, Check, Swords, RotateCcw, Clock, Activity, Volume2, VolumeX, Maximize2, Minimize2, Flame, Share2, Scissors, Snowflake, Sparkles, Eye, Play } from "lucide-react";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useGameSounds } from "@/hooks/useGameSounds";
@@ -733,15 +734,29 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
             size="icon"
             variant="ghost"
             onClick={toggleFullscreen}
-            className="h-8 w-8 hidden sm:inline-flex"
+            className="h-8 w-8"
             aria-label="ملء الشاشة"
             title="ملء الشاشة"
           >
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </Button>
+          {match?.is_public_spectate && !finished && (
+            <Button size="icon" variant="ghost" onClick={() => {
+              const url = `${window.location.origin}/matches/${match.id}/watch`;
+              navigator.clipboard?.writeText(url);
+              toast.success("اتنسخ رابط المتابعة 👁️");
+            }} className="h-8 w-8" title="نسخ رابط المتفرّج">
+              <Eye className="h-4 w-4" />
+            </Button>
+          )}
           {finished && match?.winner_id && (
             <Button size="icon" variant="ghost" onClick={shareResult} className="h-8 w-8" title="مشاركة النتيجة">
               <Share2 className="h-4 w-4" />
+            </Button>
+          )}
+          {finished && match && (
+            <Button size="icon" variant="ghost" asChild className="h-8 w-8" title="إعادة العرض">
+              <Link to={`/matches/${match.id}/replay`}><Play className="h-4 w-4" /></Link>
             </Button>
           )}
         </div>
