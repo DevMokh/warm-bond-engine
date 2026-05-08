@@ -106,6 +106,8 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     oppNotifiedRef.current = false;
     oppProgressMaxRef.current = 0;
     rematchLockRef.current = false;
+    setPu5050Used(false); setPuFreezeUsed(false); setPuDoubleUsed(false);
+    setHiddenOpts([]); setFreezeUntil(null); setDoubleActive(false);
 
     (async () => {
       const { data: m, error: me } = await supabase
