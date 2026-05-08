@@ -255,9 +255,9 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     setTimeLeft(TIMER);
   };
 
-  // ===== Power-ups =====
+  // ===== Power-ups (synced via match_events) =====
   const use5050 = () => {
-    if (pu5050Used || revealed || !current) return;
+    if (pu5050Used || revealed || !current || !match) return;
     const wrongs = current.options
       .map((_, i) => i)
       .filter((i) => i !== current.correct_answer);
@@ -265,19 +265,22 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     setHiddenOpts(toHide);
     setPu5050Used(true);
     toast.success("✂️ 50/50 — اتشال إجابتين غلط");
+    logEvent(match.id, "powerup_5050", {}, index);
   };
   const useFreeze = () => {
-    if (puFreezeUsed || revealed) return;
+    if (puFreezeUsed || revealed || !match) return;
     setFreezeUntil(Date.now() + 5000);
     setPuFreezeUsed(true);
     toast.success("❄️ Time Freeze — 5 ثواني توقف");
     setTimeout(() => setFreezeUntil(null), 5100);
+    logEvent(match.id, "powerup_freeze", { duration_ms: 5000 }, index);
   };
   const useDouble = () => {
-    if (puDoubleUsed || revealed) return;
+    if (puDoubleUsed || revealed || !match) return;
     setDoubleActive(true);
     setPuDoubleUsed(true);
     toast.success("✨ Double Points — السؤال ده نقاطه ×2");
+    logEvent(match.id, "powerup_double", {}, index);
   };
 
   const finishMatch = async () => {
