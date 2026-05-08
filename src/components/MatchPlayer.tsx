@@ -790,6 +790,11 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge className="gap-1"><Swords className="h-3 w-3" /> 1v1</Badge>
+                {match && (match.best_of ?? 1) > 1 && (
+                  <Badge variant="default" className="gap-1">
+                    جولة {match.round_number ?? 1}/{match.best_of} · {seriesScore.me}-{seriesScore.opp}
+                  </Badge>
+                )}
                 {match?.difficulty && <Badge variant="outline">{match.difficulty}</Badge>}
                 <Badge variant="secondary">سؤال {index + 1} من {total}</Badge>
               </div>
