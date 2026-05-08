@@ -220,11 +220,37 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     if (index + 1 >= pool.length) { finishMatch(); return; }
     setIndex((i) => i + 1);
     setSelected(null); setRevealed(false);
+    setHiddenOpts([]); setFreezeUntil(null); setDoubleActive(false);
     if (match) {
       const startedAt = await markQuestionStart(match.id);
       setQuestionStartAt(startedAt);
     }
     setTimeLeft(TIMER);
+  };
+
+  // ===== Power-ups =====
+  const use5050 = () => {
+    if (pu5050Used || revealed || !current) return;
+    const wrongs = current.options
+      .map((_, i) => i)
+      .filter((i) => i !== current.correct_answer);
+    const toHide = wrongs.sort(() => Math.random() - 0.5).slice(0, Math.max(0, wrongs.length - 1));
+    setHiddenOpts(toHide);
+    setPu5050Used(true);
+    toast.success("✂️ 50/50 — اتشال إجابتين غلط");
+  };
+  const useFreeze = () => {
+    if (puFreezeUsed || revealed) return;
+    setFreezeUntil(Date.now() + 5000);
+    setPuFreezeUsed(true);
+    toast.success("❄️ Time Freeze — 5 ثواني توقف");
+    setTimeout(() => setFreezeUntil(null), 5100);
+  };
+  const useDouble = () => {
+    if (puDoubleUsed || revealed) return;
+    setDoubleActive(true);
+    setPuDoubleUsed(true);
+    toast.success("✨ Double Points — السؤال ده نقاطه ×2");
   };
 
   const finishMatch = async () => {
