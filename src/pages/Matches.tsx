@@ -39,7 +39,7 @@ const Matches = () => {
   const [friends, setFriends] = useState<Profile[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ opponent_id: "", category_id: "", difficulty: "medium", questions_count: 5 });
+  const [form, setForm] = useState({ opponent_id: "", category_id: "", difficulty: "medium", questions_count: 5, best_of: 1 });
   const [playingId, setPlayingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -98,6 +98,7 @@ const Matches = () => {
       return;
     }
     const shuffled = qs.sort(() => Math.random() - 0.5).slice(0, form.questions_count);
+    const seriesId = form.best_of > 1 ? crypto.randomUUID() : null;
     const { error } = await supabase.from("matches").insert({
       challenger_id: user.id,
       opponent_id: form.opponent_id,
@@ -106,6 +107,9 @@ const Matches = () => {
       questions_count: form.questions_count,
       question_ids: shuffled.map((q) => q.id),
       status: "pending",
+      best_of: form.best_of,
+      series_id: seriesId,
+      round_number: 1,
     });
     if (error) toast.error("فشل التحدي");
     else { toast.success("تم إرسال التحدي ⚔️"); setOpen(false); load(); }
