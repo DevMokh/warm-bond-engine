@@ -191,9 +191,9 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   const logEvent = async (mid: string, type: string, payload: Record<string, unknown> = {}, qIdx: number | null = null) => {
     if (!user) return;
     try {
-      await supabase.from("match_events").insert({
-        match_id: mid, user_id: user.id, event_type: type, payload, question_index: qIdx,
-      });
+      await supabase.from("match_events").insert([{
+        match_id: mid, user_id: user.id, event_type: type, payload, question_index: qIdx ?? undefined,
+      }]);
     } catch {}
   };
 
