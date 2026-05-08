@@ -106,7 +106,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   useEffect(() => { correctRef.current = correct; }, [correct]);
 
   useEffect(() => {
-    if (!open || !matchId || !user) return;
+    if (!open || !activeMatchId || !user) return;
     let cancelled = false;
     setLoading(true);
     setIndex(0); setScore(0); setCorrect(0);
@@ -125,7 +125,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
 
     (async () => {
       const { data: m, error: me } = await supabase
-        .from("matches").select("*").eq("id", matchId).maybeSingle();
+        .from("matches").select("*").eq("id", activeMatchId).maybeSingle();
       if (cancelled) return;
       if (me || !m) { toast.error("فشل تحميل التحدي"); setLoading(false); return; }
       const mm = m as MatchRow;
@@ -157,7 +157,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     })();
 
     return () => { cancelled = true; };
-  }, [open, matchId, user]);
+  }, [open, activeMatchId, user]);
 
   // Server-synced per-question timer (with optional Freeze pause)
   useEffect(() => {
