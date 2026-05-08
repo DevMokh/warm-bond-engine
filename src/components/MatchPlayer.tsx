@@ -238,6 +238,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     supabase.from("matches").update(
       isCh ? { challenger_progress: newProgress } : { opponent_progress: newProgress }
     ).eq("id", match.id);
+    logEvent(match.id, "answer", { correct: isRight, optIdx, doubled: doubleActive }, index);
 
     setTimeout(() => nextQ(), 1200);
   };
