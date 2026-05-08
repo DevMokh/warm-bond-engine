@@ -702,7 +702,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
                   <Scissors className="h-3.5 w-3.5" /> 50/50
                 </Button>
                 <Button size="sm" variant="outline" disabled={puFreezeUsed || revealed} onClick={useFreeze}
-                  className={cn("h-8 gap-1 text-xs", freezeUntil && Date.now() < freezeUntil && "border-info bg-info/10 animate-pulse")}
+                  className={cn("h-8 gap-1 text-xs", freezeUntil && Date.now() < freezeUntil && "border-primary bg-primary/10 animate-pulse")}
                   title="جمّد الوقت 5 ثواني">
                   <Snowflake className="h-3.5 w-3.5" /> Freeze
                 </Button>
