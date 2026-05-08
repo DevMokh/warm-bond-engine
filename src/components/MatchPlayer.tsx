@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Timer, Trophy, X, Check, Swords, RotateCcw, Clock, Activity, Volume2, VolumeX, Maximize2, Minimize2, Flame, Share2 } from "lucide-react";
+import { Loader2, Timer, Trophy, X, Check, Swords, RotateCcw, Clock, Activity, Volume2, VolumeX, Maximize2, Minimize2, Flame, Share2, Scissors, Snowflake, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useGameSounds } from "@/hooks/useGameSounds";
@@ -70,6 +70,13 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   const [streak, setStreak] = useState(0);
   const [maxStreak, setMaxStreak] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // Power-ups: each usable once per match
+  const [pu5050Used, setPu5050Used] = useState(false);
+  const [puFreezeUsed, setPuFreezeUsed] = useState(false);
+  const [puDoubleUsed, setPuDoubleUsed] = useState(false);
+  const [hiddenOpts, setHiddenOpts] = useState<number[]>([]);
+  const [freezeUntil, setFreezeUntil] = useState<number | null>(null);
+  const [doubleActive, setDoubleActive] = useState(false);
   const dialogContentRef = useRef<HTMLDivElement | null>(null);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const tickedRef = useRef<number>(-1);
@@ -99,6 +106,8 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     oppNotifiedRef.current = false;
     oppProgressMaxRef.current = 0;
     rematchLockRef.current = false;
+    setPu5050Used(false); setPuFreezeUsed(false); setPuDoubleUsed(false);
+    setHiddenOpts([]); setFreezeUntil(null); setDoubleActive(false);
 
     (async () => {
       const { data: m, error: me } = await supabase
@@ -136,14 +145,20 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     return () => { cancelled = true; };
   }, [open, matchId, user]);
 
-  // Server-synced per-question timer
+  // Server-synced per-question timer (with optional Freeze pause)
   useEffect(() => {
     if (!open || loading || finished || revealed || !pool.length || questionStartAt == null) return;
     const tick = () => {
-      const elapsed = Math.floor((Date.now() - questionStartAt) / 1000);
-      const left = Math.max(0, TIMER - elapsed);
+      // Freeze power-up: extend deadline by frozen duration
+      const freezeBonus = freezeUntil ? Math.max(0, Math.min(freezeUntil, Date.now()) - questionStartAt) / 1000 : 0;
+      const elapsed = Math.floor((Date.now() - questionStartAt) / 1000) - Math.floor(freezeBonus);
+      if (freezeUntil && Date.now() < freezeUntil) {
+        // paused: show frozen time, no countdown
+        setTimeLeft((prev) => prev);
+        return;
+      }
+      const left = Math.max(0, TIMER - Math.max(0, elapsed));
       setTimeLeft(left);
-      // play tick sound for last 5 seconds (once per second)
       if (left > 0 && left <= 5 && tickedRef.current !== left) {
         tickedRef.current = left;
         play("tick", 0.4);
@@ -154,7 +169,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     const id = setInterval(tick, 250);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [questionStartAt, open, loading, finished, revealed, pool.length]);
+  }, [questionStartAt, open, loading, finished, revealed, pool.length, freezeUntil]);
 
   const current = pool[index];
 
@@ -177,10 +192,13 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
       const newStreak = streak + 1;
       // Streak bonus: +5 per question on streak 3+
       const streakBonus = newStreak >= 3 ? newStreak * 5 : 0;
-      setScore((s) => s + bonus + Math.max(0, timeLeft) + streakBonus);
+      const baseGain = bonus + Math.max(0, timeLeft) + streakBonus;
+      const finalGain = doubleActive ? baseGain * 2 : baseGain;
+      setScore((s) => s + finalGain);
       setStreak(newStreak);
       setMaxStreak((m) => Math.max(m, newStreak));
-      if (newStreak >= 3) toast.success(`🔥 Streak ${newStreak}! +${streakBonus} bonus`, { duration: 1500 });
+      if (doubleActive) toast.success(`✨ Double Points! +${finalGain}`, { duration: 1500 });
+      else if (newStreak >= 3) toast.success(`🔥 Streak ${newStreak}! +${streakBonus} bonus`, { duration: 1500 });
       play("correct", 0.5);
       try { navigator.vibrate?.(40); } catch {}
     } else {
@@ -202,11 +220,37 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     if (index + 1 >= pool.length) { finishMatch(); return; }
     setIndex((i) => i + 1);
     setSelected(null); setRevealed(false);
+    setHiddenOpts([]); setFreezeUntil(null); setDoubleActive(false);
     if (match) {
       const startedAt = await markQuestionStart(match.id);
       setQuestionStartAt(startedAt);
     }
     setTimeLeft(TIMER);
+  };
+
+  // ===== Power-ups =====
+  const use5050 = () => {
+    if (pu5050Used || revealed || !current) return;
+    const wrongs = current.options
+      .map((_, i) => i)
+      .filter((i) => i !== current.correct_answer);
+    const toHide = wrongs.sort(() => Math.random() - 0.5).slice(0, Math.max(0, wrongs.length - 1));
+    setHiddenOpts(toHide);
+    setPu5050Used(true);
+    toast.success("✂️ 50/50 — اتشال إجابتين غلط");
+  };
+  const useFreeze = () => {
+    if (puFreezeUsed || revealed) return;
+    setFreezeUntil(Date.now() + 5000);
+    setPuFreezeUsed(true);
+    toast.success("❄️ Time Freeze — 5 ثواني توقف");
+    setTimeout(() => setFreezeUntil(null), 5100);
+  };
+  const useDouble = () => {
+    if (puDoubleUsed || revealed) return;
+    setDoubleActive(true);
+    setPuDoubleUsed(true);
+    toast.success("✨ Double Points — السؤال ده نقاطه ×2");
   };
 
   const finishMatch = async () => {
@@ -649,12 +693,41 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
               </CardContent>
             </Card>
 
+            {/* Power-ups bar */}
+            <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/20 p-2">
+              <span className="text-[11px] font-bold text-muted-foreground px-1">⚡ Power-ups</span>
+              <div className="flex gap-1.5">
+                <Button size="sm" variant="outline" disabled={pu5050Used || revealed} onClick={use5050}
+                  className="h-8 gap-1 text-xs" title="50/50 — شيل إجابتين غلط">
+                  <Scissors className="h-3.5 w-3.5" /> 50/50
+                </Button>
+                <Button size="sm" variant="outline" disabled={puFreezeUsed || revealed} onClick={useFreeze}
+                  className={cn("h-8 gap-1 text-xs", freezeUntil && Date.now() < freezeUntil && "border-primary bg-primary/10 animate-pulse")}
+                  title="جمّد الوقت 5 ثواني">
+                  <Snowflake className="h-3.5 w-3.5" /> Freeze
+                </Button>
+                <Button size="sm" variant="outline" disabled={puDoubleUsed || revealed} onClick={useDouble}
+                  className={cn("h-8 gap-1 text-xs", doubleActive && "border-primary bg-primary/10")}
+                  title="نقاط مضاعفة للسؤال ده">
+                  <Sparkles className="h-3.5 w-3.5" /> ×2
+                </Button>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 gap-2.5">
               {current.options.map((opt, i) => {
                 const isCorrect = i === current.correct_answer;
                 const isSelected = selected === i;
                 const showCorrect = revealed && isCorrect;
                 const showWrong = revealed && isSelected && !isCorrect;
+                const isHidden = hiddenOpts.includes(i);
+                if (isHidden) {
+                  return (
+                    <div key={i} className="text-right p-4 rounded-xl border-2 border-dashed border-border bg-muted/30 opacity-40 line-through">
+                      <span className="font-medium">{opt}</span>
+                    </div>
+                  );
+                }
                 return (
                   <button
                     key={i}
