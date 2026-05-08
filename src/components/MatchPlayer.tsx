@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Timer, Trophy, X, Check, Swords, RotateCcw, Clock, Activity, Volume2, VolumeX, Maximize2, Minimize2, Flame, Share2, Scissors, Snowflake, Sparkles } from "lucide-react";
+import { Loader2, Timer, Trophy, X, Check, Swords, RotateCcw, Clock, Activity, Volume2, VolumeX, Maximize2, Minimize2, Flame, Share2, Scissors, Snowflake, Sparkles, Eye, Play } from "lucide-react";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useGameSounds } from "@/hooks/useGameSounds";
@@ -37,6 +38,10 @@ type MatchRow = {
   current_question_started_at: string | null;
   winner_id: string | null;
   created_at?: string;
+  series_id?: string | null;
+  round_number?: number;
+  best_of?: number;
+  is_public_spectate?: boolean;
 };
 
 type Props = {
@@ -77,6 +82,12 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   const [hiddenOpts, setHiddenOpts] = useState<number[]>([]);
   const [freezeUntil, setFreezeUntil] = useState<number | null>(null);
   const [doubleActive, setDoubleActive] = useState(false);
+  // Best-of-3
+  const [activeMatchId, setActiveMatchId] = useState<string | null>(matchId);
+  const [seriesScore, setSeriesScore] = useState<{ me: number; opp: number }>({ me: 0, opp: 0 });
+  const [intermission, setIntermission] = useState<null | { nextRound: number; me: number; opp: number }>(null);
+  // Opponent power-up notifications (just label + timestamp)
+  const [oppPuFlash, setOppPuFlash] = useState<{ type: string; at: number } | null>(null);
   const dialogContentRef = useRef<HTMLDivElement | null>(null);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const tickedRef = useRef<number>(-1);
@@ -86,13 +97,17 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   const oppNotifiedRef = useRef(false);
   const oppProgressMaxRef = useRef(0);
   const rematchLockRef = useRef(false);
+  const seriesAdvancedRef = useRef(false);
   const { muted, setMuted, play } = useGameSounds(["tick", "win", "lose", "correct", "wrong"]);
+
+  // Sync prop -> internal active match id
+  useEffect(() => { setActiveMatchId(matchId); }, [matchId]);
 
   useEffect(() => { scoreRef.current = score; }, [score]);
   useEffect(() => { correctRef.current = correct; }, [correct]);
 
   useEffect(() => {
-    if (!open || !matchId || !user) return;
+    if (!open || !activeMatchId || !user) return;
     let cancelled = false;
     setLoading(true);
     setIndex(0); setScore(0); setCorrect(0);
@@ -111,7 +126,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
 
     (async () => {
       const { data: m, error: me } = await supabase
-        .from("matches").select("*").eq("id", matchId).maybeSingle();
+        .from("matches").select("*").eq("id", activeMatchId).maybeSingle();
       if (cancelled) return;
       if (me || !m) { toast.error("فشل تحميل التحدي"); setLoading(false); return; }
       const mm = m as MatchRow;
@@ -143,7 +158,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     })();
 
     return () => { cancelled = true; };
-  }, [open, matchId, user]);
+  }, [open, activeMatchId, user]);
 
   // Server-synced per-question timer (with optional Freeze pause)
   useEffect(() => {
@@ -173,10 +188,22 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
 
   const current = pool[index];
 
+  // Insert a match event (fire-and-forget; safe to ignore failures)
+  const logEvent = async (mid: string, type: string, payload: Record<string, unknown> = {}, qIdx: number | null = null) => {
+    if (!user) return;
+    try {
+      await supabase.from("match_events").insert([{
+        match_id: mid, user_id: user.id, event_type: type,
+        payload: payload as never, question_index: qIdx ?? undefined,
+      }]);
+    } catch {}
+  };
+
   // Records server time when this player begins a question; returns parsed local ms
   const markQuestionStart = async (mid: string): Promise<number> => {
     const nowIso = new Date().toISOString();
     await supabase.from("matches").update({ current_question_started_at: nowIso }).eq("id", mid);
+    logEvent(mid, "question_start", {}, index);
     return new Date(nowIso).getTime();
   };
 
@@ -212,6 +239,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     supabase.from("matches").update(
       isCh ? { challenger_progress: newProgress } : { opponent_progress: newProgress }
     ).eq("id", match.id);
+    logEvent(match.id, "answer", { correct: isRight, optIdx, doubled: doubleActive }, index);
 
     setTimeout(() => nextQ(), 1200);
   };
@@ -228,9 +256,9 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     setTimeLeft(TIMER);
   };
 
-  // ===== Power-ups =====
+  // ===== Power-ups (synced via match_events) =====
   const use5050 = () => {
-    if (pu5050Used || revealed || !current) return;
+    if (pu5050Used || revealed || !current || !match) return;
     const wrongs = current.options
       .map((_, i) => i)
       .filter((i) => i !== current.correct_answer);
@@ -238,19 +266,22 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
     setHiddenOpts(toHide);
     setPu5050Used(true);
     toast.success("✂️ 50/50 — اتشال إجابتين غلط");
+    logEvent(match.id, "powerup_5050", {}, index);
   };
   const useFreeze = () => {
-    if (puFreezeUsed || revealed) return;
+    if (puFreezeUsed || revealed || !match) return;
     setFreezeUntil(Date.now() + 5000);
     setPuFreezeUsed(true);
     toast.success("❄️ Time Freeze — 5 ثواني توقف");
     setTimeout(() => setFreezeUntil(null), 5100);
+    logEvent(match.id, "powerup_freeze", { duration_ms: 5000 }, index);
   };
   const useDouble = () => {
-    if (puDoubleUsed || revealed) return;
+    if (puDoubleUsed || revealed || !match) return;
     setDoubleActive(true);
     setPuDoubleUsed(true);
     toast.success("✨ Double Points — السؤال ده نقاطه ×2");
+    logEvent(match.id, "powerup_double", {}, index);
   };
 
   const finishMatch = async () => {
@@ -312,7 +343,82 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
       });
     }
     onFinished?.();
+
+    // ===== Best-of-3 auto-advance =====
+    const finalLatest = (l.challenger_finished_at && l.opponent_finished_at)
+      ? { ...l, winner_id: l.winner_id ?? (l.challenger_score > l.opponent_score ? l.challenger_id : l.opponent_score > l.challenger_score ? l.opponent_id : null) }
+      : null;
+    if (finalLatest && (match.best_of ?? 1) > 1 && match.series_id && !seriesAdvancedRef.current) {
+      seriesAdvancedRef.current = true;
+      const { data: series } = await supabase
+        .from("matches").select("id, winner_id, challenger_id, opponent_id, round_number")
+        .eq("series_id", match.series_id);
+      const sList = (series ?? []) as Array<Pick<MatchRow, "id" | "winner_id" | "challenger_id" | "opponent_id" | "round_number">>;
+      const meWins = sList.filter((s) => s.winner_id === user.id).length;
+      const oppId = match.challenger_id === user.id ? match.opponent_id : match.challenger_id;
+      const oppWins = sList.filter((s) => s.winner_id === oppId).length;
+      setSeriesScore({ me: meWins, opp: oppWins });
+      const target = Math.ceil((match.best_of ?? 3) / 2);
+      const lastRound = Math.max(...sList.map((s) => s.round_number ?? 1), 1);
+      if (meWins < target && oppWins < target && lastRound < (match.best_of ?? 3)) {
+        // Only the challenger of the original series creates the next round to avoid duplicates
+        const isOriginalChallenger = match.challenger_id === user.id;
+        if (isOriginalChallenger) {
+          // Pick fresh questions
+          let qids = match.question_ids;
+          if (match.category_id && match.difficulty) {
+            const { data: qs } = await supabase.from("questions").select("id")
+              .eq("category_id", match.category_id).eq("difficulty", match.difficulty)
+              .eq("is_active", true).limit(match.questions_count * 3);
+            if (qs && qs.length >= match.questions_count) {
+              qids = qs.sort(() => Math.random() - 0.5).slice(0, match.questions_count).map((q) => q.id);
+            }
+          }
+          const { data: nm } = await supabase.from("matches").insert([{
+            challenger_id: match.challenger_id,
+            opponent_id: match.opponent_id,
+            category_id: match.category_id,
+            difficulty: match.difficulty,
+            questions_count: match.questions_count,
+            question_ids: qids,
+            status: "active",
+            series_id: match.series_id,
+            best_of: match.best_of,
+            round_number: lastRound + 1,
+          }]).select("id").single();
+          if (nm?.id) {
+            setIntermission({ nextRound: lastRound + 1, me: meWins, opp: oppWins });
+            setTimeout(() => {
+              setIntermission(null);
+              seriesAdvancedRef.current = false;
+              setActiveMatchId(nm.id); // triggers loader
+            }, 3500);
+          }
+        } else {
+          // Opponent waits for new match in series via realtime (handled in series-watch effect)
+          setIntermission({ nextRound: lastRound + 1, me: meWins, opp: oppWins });
+        }
+      }
+    }
   };
+
+  // Watch for new rounds in the series (for the player who didn't create them)
+  useEffect(() => {
+    if (!finished || !match?.series_id || !user) return;
+    const ch = supabase
+      .channel(`series-${match.series_id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "matches", filter: `series_id=eq.${match.series_id}` },
+        (p) => {
+          const row = p.new as MatchRow;
+          if (row.id === match.id) return;
+          if (row.challenger_id !== user.id && row.opponent_id !== user.id) return;
+          setIntermission(null);
+          seriesAdvancedRef.current = false;
+          setActiveMatchId(row.id);
+        })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [finished, match?.series_id, match?.id, user?.id]);
 
   // Realtime — listens for match updates + reports connection errors
   useEffect(() => {
@@ -353,6 +459,35 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   }, [open, match?.id, user?.id, rtNonce]);
 
   const retryRealtime = () => { setRtError(null); setRtNonce((n) => n + 1); };
+
+  // Listen to opponent's events (power-ups → flash banner)
+  useEffect(() => {
+    if (!open || !match || !user) return;
+    const ch = supabase
+      .channel(`match-events-${match.id}`)
+      .on("postgres_changes",
+        { event: "INSERT", schema: "public", table: "match_events", filter: `match_id=eq.${match.id}` },
+        (p) => {
+          const ev = p.new as { user_id: string; event_type: string };
+          if (ev.user_id === user.id) return;
+          if (ev.event_type === "powerup_5050") {
+            setOppPuFlash({ type: "✂️ الخصم استخدم 50/50", at: Date.now() });
+          } else if (ev.event_type === "powerup_freeze") {
+            setOppPuFlash({ type: "❄️ الخصم جمّد وقته", at: Date.now() });
+          } else if (ev.event_type === "powerup_double") {
+            setOppPuFlash({ type: "✨ الخصم فعّل Double Points", at: Date.now() });
+          }
+        })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [open, match?.id, user?.id]);
+
+  // Auto-clear opp power-up flash
+  useEffect(() => {
+    if (!oppPuFlash) return;
+    const t = setTimeout(() => setOppPuFlash(null), 3000);
+    return () => clearTimeout(t);
+  }, [oppPuFlash]);
 
   // Wake Lock: prevent screen sleep during match
   useEffect(() => {
@@ -599,15 +734,29 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
             size="icon"
             variant="ghost"
             onClick={toggleFullscreen}
-            className="h-8 w-8 hidden sm:inline-flex"
+            className="h-8 w-8"
             aria-label="ملء الشاشة"
             title="ملء الشاشة"
           >
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </Button>
+          {match?.is_public_spectate && !finished && (
+            <Button size="icon" variant="ghost" onClick={() => {
+              const url = `${window.location.origin}/matches/${match.id}/watch`;
+              navigator.clipboard?.writeText(url);
+              toast.success("اتنسخ رابط المتابعة 👁️");
+            }} className="h-8 w-8" title="نسخ رابط المتفرّج">
+              <Eye className="h-4 w-4" />
+            </Button>
+          )}
           {finished && match?.winner_id && (
             <Button size="icon" variant="ghost" onClick={shareResult} className="h-8 w-8" title="مشاركة النتيجة">
               <Share2 className="h-4 w-4" />
+            </Button>
+          )}
+          {finished && match && (
+            <Button size="icon" variant="ghost" asChild className="h-8 w-8" title="إعادة العرض">
+              <Link to={`/matches/${match.id}/replay`}><Play className="h-4 w-4" /></Link>
             </Button>
           )}
         </div>
@@ -618,6 +767,18 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
             <Button size="sm" variant="outline" onClick={retryRealtime} className="h-7 text-xs">
               إعادة المحاولة
             </Button>
+          </div>
+        )}
+        {oppPuFlash && (
+          <div className="mb-3 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs font-bold animate-in fade-in slide-in-from-top-2">
+            {oppPuFlash.type}
+          </div>
+        )}
+        {intermission && (
+          <div className="mb-3 rounded-lg border border-primary/40 bg-primary/10 p-4 text-center space-y-2 animate-in fade-in">
+            <div className="text-sm font-bold">انتهت الجولة! النتيجة: {intermission.me} - {intermission.opp}</div>
+            <div className="text-xs text-muted-foreground">جاري تحضير الجولة {intermission.nextRound}...</div>
+            <Loader2 className="h-5 w-5 animate-spin text-primary mx-auto" />
           </div>
         )}
         {loading ? (
@@ -644,6 +805,11 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge className="gap-1"><Swords className="h-3 w-3" /> 1v1</Badge>
+                {match && (match.best_of ?? 1) > 1 && (
+                  <Badge variant="default" className="gap-1">
+                    جولة {match.round_number ?? 1}/{match.best_of} · {seriesScore.me}-{seriesScore.opp}
+                  </Badge>
+                )}
                 {match?.difficulty && <Badge variant="outline">{match.difficulty}</Badge>}
                 <Badge variant="secondary">سؤال {index + 1} من {total}</Badge>
               </div>
