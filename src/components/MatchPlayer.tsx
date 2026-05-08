@@ -342,7 +342,82 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
       });
     }
     onFinished?.();
+
+    // ===== Best-of-3 auto-advance =====
+    const finalLatest = (l.challenger_finished_at && l.opponent_finished_at)
+      ? { ...l, winner_id: l.winner_id ?? (l.challenger_score > l.opponent_score ? l.challenger_id : l.opponent_score > l.challenger_score ? l.opponent_id : null) }
+      : null;
+    if (finalLatest && (match.best_of ?? 1) > 1 && match.series_id && !seriesAdvancedRef.current) {
+      seriesAdvancedRef.current = true;
+      const { data: series } = await supabase
+        .from("matches").select("id, winner_id, challenger_id, opponent_id, round_number")
+        .eq("series_id", match.series_id);
+      const sList = (series ?? []) as Array<Pick<MatchRow, "id" | "winner_id" | "challenger_id" | "opponent_id" | "round_number">>;
+      const meWins = sList.filter((s) => s.winner_id === user.id).length;
+      const oppId = match.challenger_id === user.id ? match.opponent_id : match.challenger_id;
+      const oppWins = sList.filter((s) => s.winner_id === oppId).length;
+      setSeriesScore({ me: meWins, opp: oppWins });
+      const target = Math.ceil((match.best_of ?? 3) / 2);
+      const lastRound = Math.max(...sList.map((s) => s.round_number ?? 1), 1);
+      if (meWins < target && oppWins < target && lastRound < (match.best_of ?? 3)) {
+        // Only the challenger of the original series creates the next round to avoid duplicates
+        const isOriginalChallenger = match.challenger_id === user.id;
+        if (isOriginalChallenger) {
+          // Pick fresh questions
+          let qids = match.question_ids;
+          if (match.category_id && match.difficulty) {
+            const { data: qs } = await supabase.from("questions").select("id")
+              .eq("category_id", match.category_id).eq("difficulty", match.difficulty)
+              .eq("is_active", true).limit(match.questions_count * 3);
+            if (qs && qs.length >= match.questions_count) {
+              qids = qs.sort(() => Math.random() - 0.5).slice(0, match.questions_count).map((q) => q.id);
+            }
+          }
+          const { data: nm } = await supabase.from("matches").insert([{
+            challenger_id: match.challenger_id,
+            opponent_id: match.opponent_id,
+            category_id: match.category_id,
+            difficulty: match.difficulty,
+            questions_count: match.questions_count,
+            question_ids: qids,
+            status: "active",
+            series_id: match.series_id,
+            best_of: match.best_of,
+            round_number: lastRound + 1,
+          }]).select("id").single();
+          if (nm?.id) {
+            setIntermission({ nextRound: lastRound + 1, me: meWins, opp: oppWins });
+            setTimeout(() => {
+              setIntermission(null);
+              seriesAdvancedRef.current = false;
+              setActiveMatchId(nm.id); // triggers loader
+            }, 3500);
+          }
+        } else {
+          // Opponent waits for new match in series via realtime (handled in series-watch effect)
+          setIntermission({ nextRound: lastRound + 1, me: meWins, opp: oppWins });
+        }
+      }
+    }
   };
+
+  // Watch for new rounds in the series (for the player who didn't create them)
+  useEffect(() => {
+    if (!finished || !match?.series_id || !user) return;
+    const ch = supabase
+      .channel(`series-${match.series_id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "matches", filter: `series_id=eq.${match.series_id}` },
+        (p) => {
+          const row = p.new as MatchRow;
+          if (row.id === match.id) return;
+          if (row.challenger_id !== user.id && row.opponent_id !== user.id) return;
+          setIntermission(null);
+          seriesAdvancedRef.current = false;
+          setActiveMatchId(row.id);
+        })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [finished, match?.series_id, match?.id, user?.id]);
 
   // Realtime — listens for match updates + reports connection errors
   useEffect(() => {
