@@ -37,6 +37,10 @@ type MatchRow = {
   current_question_started_at: string | null;
   winner_id: string | null;
   created_at?: string;
+  series_id?: string | null;
+  round_number?: number;
+  best_of?: number;
+  is_public_spectate?: boolean;
 };
 
 type Props = {
