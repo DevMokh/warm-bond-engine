@@ -693,12 +693,41 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
               </CardContent>
             </Card>
 
+            {/* Power-ups bar */}
+            <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/20 p-2">
+              <span className="text-[11px] font-bold text-muted-foreground px-1">⚡ Power-ups</span>
+              <div className="flex gap-1.5">
+                <Button size="sm" variant="outline" disabled={pu5050Used || revealed} onClick={use5050}
+                  className="h-8 gap-1 text-xs" title="50/50 — شيل إجابتين غلط">
+                  <Scissors className="h-3.5 w-3.5" /> 50/50
+                </Button>
+                <Button size="sm" variant="outline" disabled={puFreezeUsed || revealed} onClick={useFreeze}
+                  className={cn("h-8 gap-1 text-xs", freezeUntil && Date.now() < freezeUntil && "border-info bg-info/10 animate-pulse")}
+                  title="جمّد الوقت 5 ثواني">
+                  <Snowflake className="h-3.5 w-3.5" /> Freeze
+                </Button>
+                <Button size="sm" variant="outline" disabled={puDoubleUsed || revealed} onClick={useDouble}
+                  className={cn("h-8 gap-1 text-xs", doubleActive && "border-primary bg-primary/10")}
+                  title="نقاط مضاعفة للسؤال ده">
+                  <Sparkles className="h-3.5 w-3.5" /> ×2
+                </Button>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 gap-2.5">
               {current.options.map((opt, i) => {
                 const isCorrect = i === current.correct_answer;
                 const isSelected = selected === i;
                 const showCorrect = revealed && isCorrect;
                 const showWrong = revealed && isSelected && !isCorrect;
+                const isHidden = hiddenOpts.includes(i);
+                if (isHidden) {
+                  return (
+                    <div key={i} className="text-right p-4 rounded-xl border-2 border-dashed border-border bg-muted/30 opacity-40 line-through">
+                      <span className="font-medium">{opt}</span>
+                    </div>
+                  );
+                }
                 return (
                   <button
                     key={i}
