@@ -187,10 +187,21 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
 
   const current = pool[index];
 
+  // Insert a match event (fire-and-forget; safe to ignore failures)
+  const logEvent = async (mid: string, type: string, payload: Record<string, unknown> = {}, qIdx: number | null = null) => {
+    if (!user) return;
+    try {
+      await supabase.from("match_events").insert({
+        match_id: mid, user_id: user.id, event_type: type, payload, question_index: qIdx,
+      });
+    } catch {}
+  };
+
   // Records server time when this player begins a question; returns parsed local ms
   const markQuestionStart = async (mid: string): Promise<number> => {
     const nowIso = new Date().toISOString();
     await supabase.from("matches").update({ current_question_started_at: nowIso }).eq("id", mid);
+    logEvent(mid, "question_start", {}, index);
     return new Date(nowIso).getTime();
   };
 
