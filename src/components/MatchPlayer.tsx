@@ -81,6 +81,12 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   const [hiddenOpts, setHiddenOpts] = useState<number[]>([]);
   const [freezeUntil, setFreezeUntil] = useState<number | null>(null);
   const [doubleActive, setDoubleActive] = useState(false);
+  // Best-of-3
+  const [activeMatchId, setActiveMatchId] = useState<string | null>(matchId);
+  const [seriesScore, setSeriesScore] = useState<{ me: number; opp: number }>({ me: 0, opp: 0 });
+  const [intermission, setIntermission] = useState<null | { nextRound: number; me: number; opp: number }>(null);
+  // Opponent power-up notifications (just label + timestamp)
+  const [oppPuFlash, setOppPuFlash] = useState<{ type: string; at: number } | null>(null);
   const dialogContentRef = useRef<HTMLDivElement | null>(null);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const tickedRef = useRef<number>(-1);
@@ -90,7 +96,11 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   const oppNotifiedRef = useRef(false);
   const oppProgressMaxRef = useRef(0);
   const rematchLockRef = useRef(false);
+  const seriesAdvancedRef = useRef(false);
   const { muted, setMuted, play } = useGameSounds(["tick", "win", "lose", "correct", "wrong"]);
+
+  // Sync prop -> internal active match id
+  useEffect(() => { setActiveMatchId(matchId); }, [matchId]);
 
   useEffect(() => { scoreRef.current = score; }, [score]);
   useEffect(() => { correctRef.current = correct; }, [correct]);
