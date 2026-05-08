@@ -754,6 +754,18 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
             </Button>
           </div>
         )}
+        {oppPuFlash && (
+          <div className="mb-3 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs font-bold animate-in fade-in slide-in-from-top-2">
+            {oppPuFlash.type}
+          </div>
+        )}
+        {intermission && (
+          <div className="mb-3 rounded-lg border border-primary/40 bg-primary/10 p-4 text-center space-y-2 animate-in fade-in">
+            <div className="text-sm font-bold">انتهت الجولة! النتيجة: {intermission.me} - {intermission.opp}</div>
+            <div className="text-xs text-muted-foreground">جاري تحضير الجولة {intermission.nextRound}...</div>
+            <Loader2 className="h-5 w-5 animate-spin text-primary mx-auto" />
+          </div>
+        )}
         {loading ? (
           <div className="py-16 flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
