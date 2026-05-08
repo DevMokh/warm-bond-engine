@@ -70,6 +70,13 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
   const [streak, setStreak] = useState(0);
   const [maxStreak, setMaxStreak] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // Power-ups: each usable once per match
+  const [pu5050Used, setPu5050Used] = useState(false);
+  const [puFreezeUsed, setPuFreezeUsed] = useState(false);
+  const [puDoubleUsed, setPuDoubleUsed] = useState(false);
+  const [hiddenOpts, setHiddenOpts] = useState<number[]>([]);
+  const [freezeUntil, setFreezeUntil] = useState<number | null>(null);
+  const [doubleActive, setDoubleActive] = useState(false);
   const dialogContentRef = useRef<HTMLDivElement | null>(null);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const tickedRef = useRef<number>(-1);
