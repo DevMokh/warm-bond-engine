@@ -15,6 +15,8 @@ import Admin from "./pages/Admin.tsx";
 import Friends from "./pages/Friends.tsx";
 import Tournaments from "./pages/Tournaments.tsx";
 import Matches from "./pages/Matches.tsx";
+import SpectateMatch from "./pages/SpectateMatch.tsx";
+import ReplayMatch from "./pages/ReplayMatch.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -44,6 +46,8 @@ const App = () => (
               <Route path="/friends" element={<ProtectedRoute><Friends /></ProtectedRoute>} />
               <Route path="/tournaments" element={<ProtectedRoute><Tournaments /></ProtectedRoute>} />
               <Route path="/matches" element={<ProtectedRoute><Matches /></ProtectedRoute>} />
+              <Route path="/matches/:id/watch" element={<SpectateMatch />} />
+              <Route path="/matches/:id/replay" element={<ProtectedRoute><ReplayMatch /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </LayoutWrapper>
