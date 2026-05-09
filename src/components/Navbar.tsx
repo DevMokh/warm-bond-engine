@@ -40,9 +40,7 @@ export const Navbar = () => {
 
   // Hide chrome on immersive routes (match player, spectate, replay)
   const path = location.pathname;
-  const isImmersive =
-    /^\/matches\/[^/]+\/(watch|replay)$/.test(path) ||
-    /^\/matches\/[^/]+$/.test(path);
+  const isImmersive = /^\/matches\/[^/]+\/(watch|replay)$/.test(path);
   if (isImmersive) return null;
 
   return (
