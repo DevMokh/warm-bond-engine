@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Loader2, Eye, Maximize2, Minimize2, Activity, Timer, ArrowLeft } from "lucide-react";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import { MatchTimeline, MatchEvent } from "@/components/MatchTimeline";
+import { SeriesProgress } from "@/components/SeriesProgress";
 import { cn } from "@/lib/utils";
 
 const TIMER = 20;
@@ -28,6 +29,7 @@ type Profile = { user_id: string; display_name: string | null; username: string 
 export default function SpectateMatch() {
   const { id } = useParams<{ id: string }>();
   const [match, setMatch] = useState<MatchRow | null>(null);
+  const [seriesMatches, setSeriesMatches] = useState<MatchRow[]>([]);
   const [events, setEvents] = useState<MatchEvent[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [now, setNow] = useState(Date.now());
