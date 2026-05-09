@@ -5,6 +5,7 @@ export type SfxKind = "tick" | "win" | "lose" | "correct" | "wrong";
 
 const STORAGE_KEY = "matchPlayer.muted";
 const sessionCache = new Map<SfxKind, string>(); // dataURI per kind
+let sfxDisabled = false; // set true after auth/service error to stop retrying
 
 export function useGameSounds(preload: SfxKind[] = ["tick", "win", "lose"]) {
   const [muted, setMutedState] = useState<boolean>(() => {
@@ -22,11 +23,15 @@ export function useGameSounds(preload: SfxKind[] = ["tick", "win", "lose"]) {
 
   const fetchSound = useCallback(async (kind: SfxKind): Promise<string | null> => {
     if (sessionCache.has(kind)) return sessionCache.get(kind)!;
+    if (sfxDisabled) return null;
     try {
       const { data, error } = await supabase.functions.invoke("elevenlabs-sfx", {
         body: { kind },
       });
-      if (error || !data?.audioContent) return null;
+      if (error || !data?.audioContent) {
+        if (data?.disabled || data?.error) sfxDisabled = true;
+        return null;
+      }
       const url = `data:audio/mpeg;base64,${data.audioContent}`;
       sessionCache.set(kind, url);
       return url;

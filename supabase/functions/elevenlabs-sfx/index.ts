@@ -49,7 +49,17 @@ Deno.serve(async (req) => {
     });
     if (!r.ok) {
       const err = await r.text();
-      throw new Error(`ElevenLabs ${r.status}: ${err}`);
+      console.error(`ElevenLabs ${r.status}:`, err);
+      const isAuth = r.status === 401 || r.status === 403;
+      return new Response(
+        JSON.stringify({
+          audioContent: null,
+          disabled: isAuth,
+          error: isAuth ? "ELEVENLABS_AUTH_ERROR" : "SERVICE_UNAVAILABLE",
+          message: err,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
     const buf = await r.arrayBuffer();
     const b64 = base64Encode(new Uint8Array(buf));
@@ -60,9 +70,10 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "unknown";
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error("SFX function error:", msg);
+    return new Response(
+      JSON.stringify({ audioContent: null, error: "SERVICE_FAILED", message: msg }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 });
