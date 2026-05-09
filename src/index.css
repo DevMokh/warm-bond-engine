@@ -183,3 +183,21 @@
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--primary));
 }
+
+/* Fullscreen fallback (iOS Safari, embedded iframes) */
+.fs-fallback {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  overflow: auto !important;
+  background: hsl(var(--background));
+}
+:fullscreen, :-webkit-full-screen {
+  width: 100vw;
+  height: 100vh;
+  overflow: auto;
+  background: hsl(var(--background));
+}
