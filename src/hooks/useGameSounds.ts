@@ -1,18 +1,72 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 export type SfxKind = "tick" | "win" | "lose" | "correct" | "wrong";
 
 const STORAGE_KEY = "matchPlayer.muted";
-const sessionCache = new Map<SfxKind, string>(); // dataURI per kind
-let sfxDisabled = false; // set true after auth/service error to stop retrying
 
-export function useGameSounds(preload: SfxKind[] = ["tick", "win", "lose"]) {
+// Synthesize all SFX locally with Web Audio API — no network, no API key.
+type Note = { f: number; t: number; d: number; type?: OscillatorType; vol?: number };
+
+const PATTERNS: Record<SfxKind, Note[]> = {
+  tick: [{ f: 1200, t: 0, d: 0.05, type: "square", vol: 0.15 }],
+  correct: [
+    { f: 880, t: 0, d: 0.12, type: "triangle", vol: 0.25 },
+    { f: 1320, t: 0.1, d: 0.18, type: "triangle", vol: 0.25 },
+  ],
+  wrong: [
+    { f: 220, t: 0, d: 0.18, type: "sawtooth", vol: 0.2 },
+    { f: 160, t: 0.15, d: 0.22, type: "sawtooth", vol: 0.2 },
+  ],
+  win: [
+    { f: 523, t: 0, d: 0.14, type: "triangle", vol: 0.25 },
+    { f: 659, t: 0.13, d: 0.14, type: "triangle", vol: 0.25 },
+    { f: 784, t: 0.26, d: 0.14, type: "triangle", vol: 0.25 },
+    { f: 1046, t: 0.39, d: 0.3, type: "triangle", vol: 0.28 },
+  ],
+  lose: [
+    { f: 392, t: 0, d: 0.18, type: "sine", vol: 0.22 },
+    { f: 311, t: 0.18, d: 0.22, type: "sine", vol: 0.22 },
+    { f: 233, t: 0.4, d: 0.32, type: "sine", vol: 0.22 },
+  ],
+};
+
+let _ctx: AudioContext | null = null;
+const getCtx = () => {
+  if (typeof window === "undefined") return null;
+  if (!_ctx) {
+    const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AC) return null;
+    _ctx = new AC();
+  }
+  if (_ctx.state === "suspended") _ctx.resume().catch(() => {});
+  return _ctx;
+};
+
+const playPattern = (kind: SfxKind, masterVol: number) => {
+  const ctx = getCtx();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  PATTERNS[kind].forEach((n) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = n.type ?? "sine";
+    osc.frequency.value = n.f;
+    const v = (n.vol ?? 0.2) * masterVol;
+    gain.gain.setValueAtTime(0.0001, now + n.t);
+    gain.gain.exponentialRampToValueAtTime(v, now + n.t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + n.t + n.d);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(now + n.t);
+    osc.stop(now + n.t + n.d + 0.02);
+  });
+};
+
+export function useGameSounds(_preload: SfxKind[] = []) {
   const [muted, setMutedState] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem(STORAGE_KEY) === "1";
   });
-  const audioPool = useRef<Map<SfxKind, HTMLAudioElement>>(new Map());
+  const masterRef = useRef(0.7);
 
   const setMuted = useCallback((v: boolean) => {
     setMutedState(v);
@@ -21,57 +75,32 @@ export function useGameSounds(preload: SfxKind[] = ["tick", "win", "lose"]) {
     } catch {}
   }, []);
 
-  const fetchSound = useCallback(async (kind: SfxKind): Promise<string | null> => {
-    if (sessionCache.has(kind)) return sessionCache.get(kind)!;
-    if (sfxDisabled) return null;
-    try {
-      const { data, error } = await supabase.functions.invoke("elevenlabs-sfx", {
-        body: { kind },
-      });
-      if (error || !data?.audioContent) {
-        if (data?.disabled || data?.error) sfxDisabled = true;
-        return null;
-      }
-      const url = `data:audio/mpeg;base64,${data.audioContent}`;
-      sessionCache.set(kind, url);
-      return url;
-    } catch {
-      return null;
-    }
-  }, []);
-
-  // Preload on mount
+  // Unlock AudioContext on first user gesture (autoplay policies)
   useEffect(() => {
-    preload.forEach(async (k) => {
-      const url = await fetchSound(k);
-      if (url && !audioPool.current.has(k)) {
-        const a = new Audio(url);
-        a.preload = "auto";
-        audioPool.current.set(k, a);
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const unlock = () => {
+      getCtx();
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+    window.addEventListener("pointerdown", unlock, { once: true });
+    window.addEventListener("keydown", unlock, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
   }, []);
 
   const play = useCallback(
     async (kind: SfxKind, volume = 0.6) => {
       if (muted) return;
-      let a = audioPool.current.get(kind);
-      if (!a) {
-        const url = await fetchSound(kind);
-        if (!url) return;
-        a = new Audio(url);
-        audioPool.current.set(kind, a);
-      }
+      masterRef.current = volume;
       try {
-        a.currentTime = 0;
-        a.volume = volume;
-        await a.play();
+        playPattern(kind, volume);
       } catch {
-        // autoplay blocked — silent fail
+        // ignore
       }
     },
-    [muted, fetchSound]
+    [muted],
   );
 
   return { muted, setMuted, play };
