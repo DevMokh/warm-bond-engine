@@ -73,7 +73,14 @@ export default function SpectateMatch() {
     const ch = supabase
       .channel(`spec-${id}`)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "matches", filter: `id=eq.${id}` },
-        (p) => setMatch(p.new as MatchRow))
+        async (p) => {
+          const newM = p.new as MatchRow;
+          setMatch(newM);
+          if (newM.series_id) {
+            const { data: ser } = await supabase.from("matches").select("*").eq("series_id", newM.series_id).order("round_number", { ascending: true });
+            if (ser) setSeriesMatches(ser as MatchRow[]);
+          }
+        })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "match_events", filter: `match_id=eq.${id}` },
         (p) => setEvents((e) => [...e, p.new as MatchEvent]))
       .subscribe();
