@@ -38,6 +38,11 @@ export const Navbar = () => {
     ...(isAdmin ? [{ to: "/admin", label: "أدمن", icon: ShieldCheck }] : []),
   ];
 
+  // Hide chrome on immersive routes (match player, spectate, replay)
+  const path = location.pathname;
+  const isImmersive = /^\/matches\/[^/]+\/(watch|replay)$/.test(path);
+  if (isImmersive) return null;
+
   return (
     <>
       {/* Desktop top header - hidden on mobile */}
