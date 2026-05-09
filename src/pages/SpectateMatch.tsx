@@ -46,6 +46,13 @@ export default function SpectateMatch() {
       if (cancelled) return;
       if (error || !data) { setDenied(true); setLoading(false); return; }
       setMatch(data as MatchRow);
+      // Load full series for Best-of-N progress
+      if (data.series_id) {
+        const { data: ser } = await supabase.from("matches").select("*").eq("series_id", data.series_id).order("round_number", { ascending: true });
+        if (!cancelled && ser) setSeriesMatches(ser as MatchRow[]);
+      } else {
+        setSeriesMatches([data as MatchRow]);
+      }
       const { data: ev } = await supabase.from("match_events").select("*").eq("match_id", id).order("created_at", { ascending: true });
       if (!cancelled && ev) setEvents(ev as MatchEvent[]);
       const ids = [data.challenger_id, data.opponent_id];
