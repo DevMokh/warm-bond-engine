@@ -160,7 +160,24 @@ export default function SpectateMatch() {
           ))}
         </div>
 
-        <MatchTimeline events={events} challengerName={cName} opponentName={oName} challengerId={match.challenger_id} />
+        {match.best_of > 1 && (
+          <SeriesProgress
+            bestOf={match.best_of}
+            challengerWins={seriesMatches.filter((m) => m.winner_id === match.challenger_id).length}
+            opponentWins={seriesMatches.filter((m) => m.winner_id === match.opponent_id).length}
+            challengerName={cName}
+            opponentName={oName}
+            currentRound={match.round_number}
+          />
+        )}
+
+        <MatchTimeline
+          events={events}
+          challengerName={cName}
+          opponentName={oName}
+          challengerId={match.challenger_id}
+          highlightLastId={events[events.length - 1]?.id}
+        />
       </div>
     </div>
   );
