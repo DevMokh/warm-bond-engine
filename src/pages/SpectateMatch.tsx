@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Loader2, Eye, Maximize2, Minimize2, Activity, Timer, ArrowLeft } from "lucide-react";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import { MatchTimeline, MatchEvent } from "@/components/MatchTimeline";
+import { SeriesProgress } from "@/components/SeriesProgress";
 import { cn } from "@/lib/utils";
 
 const TIMER = 20;
@@ -28,6 +29,7 @@ type Profile = { user_id: string; display_name: string | null; username: string 
 export default function SpectateMatch() {
   const { id } = useParams<{ id: string }>();
   const [match, setMatch] = useState<MatchRow | null>(null);
+  const [seriesMatches, setSeriesMatches] = useState<MatchRow[]>([]);
   const [events, setEvents] = useState<MatchEvent[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [now, setNow] = useState(Date.now());
@@ -44,6 +46,13 @@ export default function SpectateMatch() {
       if (cancelled) return;
       if (error || !data) { setDenied(true); setLoading(false); return; }
       setMatch(data as MatchRow);
+      // Load full series for Best-of-N progress
+      if (data.series_id) {
+        const { data: ser } = await supabase.from("matches").select("*").eq("series_id", data.series_id).order("round_number", { ascending: true });
+        if (!cancelled && ser) setSeriesMatches(ser as MatchRow[]);
+      } else {
+        setSeriesMatches([data as MatchRow]);
+      }
       const { data: ev } = await supabase.from("match_events").select("*").eq("match_id", id).order("created_at", { ascending: true });
       if (!cancelled && ev) setEvents(ev as MatchEvent[]);
       const ids = [data.challenger_id, data.opponent_id];
@@ -64,7 +73,14 @@ export default function SpectateMatch() {
     const ch = supabase
       .channel(`spec-${id}`)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "matches", filter: `id=eq.${id}` },
-        (p) => setMatch(p.new as MatchRow))
+        async (p) => {
+          const newM = p.new as MatchRow;
+          setMatch(newM);
+          if (newM.series_id) {
+            const { data: ser } = await supabase.from("matches").select("*").eq("series_id", newM.series_id).order("round_number", { ascending: true });
+            if (ser) setSeriesMatches(ser as MatchRow[]);
+          }
+        })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "match_events", filter: `match_id=eq.${id}` },
         (p) => setEvents((e) => [...e, p.new as MatchEvent]))
       .subscribe();
@@ -144,7 +160,24 @@ export default function SpectateMatch() {
           ))}
         </div>
 
-        <MatchTimeline events={events} challengerName={cName} opponentName={oName} challengerId={match.challenger_id} />
+        {match.best_of > 1 && (
+          <SeriesProgress
+            bestOf={match.best_of}
+            challengerWins={seriesMatches.filter((m) => m.winner_id === match.challenger_id).length}
+            opponentWins={seriesMatches.filter((m) => m.winner_id === match.opponent_id).length}
+            challengerName={cName}
+            opponentName={oName}
+            currentRound={match.round_number}
+          />
+        )}
+
+        <MatchTimeline
+          events={events}
+          challengerName={cName}
+          opponentName={oName}
+          challengerId={match.challenger_id}
+          highlightLastId={events[events.length - 1]?.id}
+        />
       </div>
     </div>
   );

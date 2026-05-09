@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Loader2, Play, Pause, FastForward, RotateCcw, ArrowLeft, Maximize2, Minimize2 } from "lucide-react";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import { MatchTimeline, MatchEvent } from "@/components/MatchTimeline";
+import { SeriesProgress } from "@/components/SeriesProgress";
 
 type MatchRow = {
   id: string; challenger_id: string; opponent_id: string;
@@ -129,20 +130,30 @@ export default function ReplayMatch() {
           </div>
         </div>
 
-        {/* Series scoreboard */}
-        <Card>
-          <CardContent className="p-4 grid grid-cols-3 items-center gap-2 text-center">
-            <div>
-              <div className="text-xs text-muted-foreground truncate">{cName}</div>
-              <div className="text-3xl font-extrabold text-primary">{seriesScore.c}</div>
-            </div>
-            <div className="text-xs text-muted-foreground">السلسلة</div>
-            <div>
-              <div className="text-xs text-muted-foreground truncate">{oName}</div>
-              <div className="text-3xl font-extrabold text-primary">{seriesScore.o}</div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Series scoreboard with progress */}
+        {matches[0]?.best_of > 1 ? (
+          <SeriesProgress
+            bestOf={matches[0].best_of}
+            challengerWins={seriesScore.c}
+            opponentWins={seriesScore.o}
+            challengerName={cName}
+            opponentName={oName}
+          />
+        ) : (
+          <Card>
+            <CardContent className="p-4 grid grid-cols-3 items-center gap-2 text-center">
+              <div>
+                <div className="text-xs text-muted-foreground truncate">{cName}</div>
+                <div className="text-3xl font-extrabold text-primary">{matches[0]?.challenger_score ?? 0}</div>
+              </div>
+              <div className="text-xs text-muted-foreground">النتيجة</div>
+              <div>
+                <div className="text-xs text-muted-foreground truncate">{oName}</div>
+                <div className="text-3xl font-extrabold text-primary">{matches[0]?.opponent_score ?? 0}</div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Controls */}
         <Card>
@@ -169,7 +180,13 @@ export default function ReplayMatch() {
           </CardContent>
         </Card>
 
-        <MatchTimeline events={visibleEvents} challengerName={cName} opponentName={oName} challengerId={matches[0]?.challenger_id} />
+        <MatchTimeline
+          events={visibleEvents}
+          challengerName={cName}
+          opponentName={oName}
+          challengerId={matches[0]?.challenger_id}
+          highlightLastId={visibleEvents[visibleEvents.length - 1]?.id}
+        />
       </div>
     </div>
   );
