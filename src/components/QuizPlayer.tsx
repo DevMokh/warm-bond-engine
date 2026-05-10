@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Heart, Timer, Trophy, X, Check, RotateCw } from "lucide-react";
+import { Loader2, Heart, Timer, Trophy, X, Check, RotateCw, Maximize2, Minimize2, Volume2, VolumeX } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useFullscreen } from "@/hooks/useFullscreen";
+import { useGameSounds } from "@/hooks/useGameSounds";
 
 export type ModeConfig = {
   id: string;
@@ -77,6 +79,18 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
   const [finished, setFinished] = useState(false);
   const startTimeRef = useRef<number>(Date.now());
   const sessionSavedRef = useRef(false);
+  const { ref: fsRef, isFullscreen, toggle: toggleFs } = useFullscreen<HTMLDivElement>();
+  const { muted, setMuted, play } = useGameSounds();
+
+  // SFX on reveal / finish
+  useEffect(() => {
+    if (!revealed || !pool[index]) return;
+    const isCorrect = selected === pool[index].correct_answer;
+    play(isCorrect ? "correct" : "wrong");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revealed]);
+  useEffect(() => { if (finished) play(correctCount / Math.max(1, index + 1) >= 0.5 ? "win" : "lose"); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finished]);
 
   // Load questions
   useEffect(() => {
@@ -214,7 +228,18 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
+      <DialogContent ref={fsRef} className="max-w-2xl max-h-[92vh] overflow-y-auto data-[fs=true]:max-w-none data-[fs=true]:max-h-none data-[fs=true]:h-screen data-[fs=true]:w-screen data-[fs=true]:rounded-none" data-fs={isFullscreen || undefined}>
+        {/* Floating controls */}
+        {!loading && pool.length > 0 && !finished && (
+          <div className="absolute top-3 left-3 z-20 flex gap-1">
+            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setMuted(!muted)} title={muted ? "تشغيل الصوت" : "كتم الصوت"} aria-label="صوت">
+              {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            </Button>
+            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={toggleFs} title="ملء الشاشة" aria-label="ملء الشاشة">
+              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
+          </div>
+        )}
         {loading ? (
           <div className="py-16 flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />

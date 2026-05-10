@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Play, Pause, FastForward, RotateCcw, ArrowLeft, Maximize2, Minimize2 } from "lucide-react";
+import { Loader2, Play, Pause, FastForward, RotateCcw, ArrowLeft, Maximize2, Minimize2, Volume2, VolumeX } from "lucide-react";
 import { useFullscreen } from "@/hooks/useFullscreen";
+import { useGameSounds } from "@/hooks/useGameSounds";
 import { MatchTimeline, MatchEvent } from "@/components/MatchTimeline";
 import { SeriesProgress } from "@/components/SeriesProgress";
 
@@ -30,6 +31,18 @@ export default function ReplayMatch() {
   const startRef = useRef<number | null>(null);
   const baseRef = useRef<number>(0);
   const { ref, isFullscreen, toggle } = useFullscreen();
+  const { muted, setMuted, play } = useGameSounds();
+  const lastPlayedIdxRef = useRef(0);
+  useEffect(() => {
+    if (cursor > lastPlayedIdxRef.current) {
+      const ev = allEvents[cursor - 1];
+      if (ev?.event_type === "answer") {
+        const correct = (ev as unknown as { is_correct?: boolean }).is_correct;
+        play(correct ? "correct" : "wrong");
+      } else if (ev) play("tick");
+    }
+    lastPlayedIdxRef.current = cursor;
+  }, [cursor, allEvents, play]);
 
   useEffect(() => {
     if (!id) return;
@@ -123,6 +136,9 @@ export default function ReplayMatch() {
             {matches[0]?.best_of > 1 && <Badge variant="outline">Best-of-{matches[0].best_of}</Badge>}
           </div>
           <div className="flex gap-1">
+            <Button size="icon" variant="ghost" onClick={() => setMuted(!muted)} className="h-8 w-8" title={muted ? "تشغيل الصوت" : "كتم الصوت"} aria-label="صوت">
+              {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            </Button>
             <Button size="icon" variant="ghost" onClick={toggle} className="h-8 w-8">
               {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </Button>

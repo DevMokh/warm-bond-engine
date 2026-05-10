@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Eye, Maximize2, Minimize2, Activity, Timer, ArrowLeft } from "lucide-react";
+import { Loader2, Eye, Maximize2, Minimize2, Activity, Timer, ArrowLeft, Volume2, VolumeX } from "lucide-react";
 import { useFullscreen } from "@/hooks/useFullscreen";
+import { useGameSounds } from "@/hooks/useGameSounds";
 import { MatchTimeline, MatchEvent } from "@/components/MatchTimeline";
 import { SeriesProgress } from "@/components/SeriesProgress";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,7 @@ export default function SpectateMatch() {
   const [loading, setLoading] = useState(true);
   const [denied, setDenied] = useState(false);
   const { ref, isFullscreen, toggle } = useFullscreen();
+  const { muted, setMuted, play } = useGameSounds();
 
   useEffect(() => {
     if (!id) return;
@@ -93,6 +95,21 @@ export default function SpectateMatch() {
     return () => clearInterval(t);
   }, []);
 
+  // SFX on new events / finish
+  const lastEvIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const last = events[events.length - 1];
+    if (!last || last.id === lastEvIdRef.current) return;
+    lastEvIdRef.current = last.id;
+    if (last.event_type === "answer") {
+      const correct = (last as unknown as { is_correct?: boolean }).is_correct;
+      play(correct ? "correct" : "wrong");
+    } else play("tick");
+  }, [events, play]);
+  useEffect(() => {
+    if (match?.status === "finished" && match.winner_id) play("win");
+  }, [match?.status, match?.winner_id, play]);
+
   const timeLeft = useMemo(() => {
     if (!match?.current_question_started_at) return TIMER;
     const elapsed = Math.floor((now - new Date(match.current_question_started_at).getTime()) / 1000);
@@ -123,6 +140,9 @@ export default function SpectateMatch() {
             <Badge variant="outline">{match.status}</Badge>
           </div>
           <div className="flex gap-1">
+            <Button size="icon" variant="ghost" onClick={() => setMuted(!muted)} className="h-8 w-8" aria-label="صوت" title={muted ? "تشغيل الصوت" : "كتم الصوت"}>
+              {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            </Button>
             <Button size="icon" variant="ghost" onClick={toggle} className="h-8 w-8" aria-label="ملء الشاشة">
               {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </Button>
