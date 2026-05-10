@@ -136,6 +136,9 @@ export default function ReplayMatch() {
             {matches[0]?.best_of > 1 && <Badge variant="outline">Best-of-{matches[0].best_of}</Badge>}
           </div>
           <div className="flex gap-1">
+            <Button size="icon" variant="ghost" onClick={() => setMuted(!muted)} className="h-8 w-8" title={muted ? "تشغيل الصوت" : "كتم الصوت"} aria-label="صوت">
+              {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            </Button>
             <Button size="icon" variant="ghost" onClick={toggle} className="h-8 w-8">
               {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </Button>
