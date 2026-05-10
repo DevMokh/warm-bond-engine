@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Play, Pause, FastForward, RotateCcw, ArrowLeft, Maximize2, Minimize2 } from "lucide-react";
+import { Loader2, Play, Pause, FastForward, RotateCcw, ArrowLeft, Maximize2, Minimize2, Volume2, VolumeX } from "lucide-react";
 import { useFullscreen } from "@/hooks/useFullscreen";
+import { useGameSounds } from "@/hooks/useGameSounds";
 import { MatchTimeline, MatchEvent } from "@/components/MatchTimeline";
 import { SeriesProgress } from "@/components/SeriesProgress";
 
