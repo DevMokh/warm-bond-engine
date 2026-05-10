@@ -125,6 +125,9 @@ export default function SpectateMatch() {
             <Badge variant="outline">{match.status}</Badge>
           </div>
           <div className="flex gap-1">
+            <Button size="icon" variant="ghost" onClick={() => setMuted(!muted)} className="h-8 w-8" aria-label="صوت" title={muted ? "تشغيل الصوت" : "كتم الصوت"}>
+              {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            </Button>
             <Button size="icon" variant="ghost" onClick={toggle} className="h-8 w-8" aria-label="ملء الشاشة">
               {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </Button>
