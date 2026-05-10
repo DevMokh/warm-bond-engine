@@ -143,6 +143,7 @@ export default function SpectateMatch() {
             <Badge variant="secondary" className="gap-1"><Eye className="h-3 w-3" /> متفرّج</Badge>
             {match.best_of > 1 && <Badge variant="outline">جولة {match.round_number} من {match.best_of}</Badge>}
             <Badge variant="outline">{match.status}</Badge>
+            <SfxIndicator kind={lastSfx} muted={muted} ts={lastSfxTs} />
           </div>
           <div className="flex gap-1">
             <Button size="icon" variant="ghost" onClick={() => setMuted(!muted)} className="h-8 w-8" aria-label="صوت" title={muted ? "تشغيل الصوت" : "كتم الصوت"}>
