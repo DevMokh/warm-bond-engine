@@ -35,13 +35,17 @@ export default function ReplayMatch() {
   const { ref, isFullscreen, toggle } = useFullscreen();
   const { muted, setMuted, play } = useGameSounds();
   const lastPlayedIdxRef = useRef(0);
+  const [lastSfx, setLastSfx] = useState<SfxKind | null>(null);
+  const [lastSfxTs, setLastSfxTs] = useState(0);
   useEffect(() => {
     if (cursor > lastPlayedIdxRef.current) {
       const ev = allEvents[cursor - 1];
+      let kind: SfxKind | null = null;
       if (ev?.event_type === "answer") {
         const correct = (ev as unknown as { is_correct?: boolean }).is_correct;
-        play(correct ? "correct" : "wrong");
-      } else if (ev) play("tick");
+        kind = correct ? "correct" : "wrong";
+      } else if (ev) kind = "tick";
+      if (kind) { play(kind); setLastSfx(kind); setLastSfxTs(Date.now()); }
     }
     lastPlayedIdxRef.current = cursor;
   }, [cursor, allEvents, play]);
