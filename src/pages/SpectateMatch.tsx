@@ -10,6 +10,7 @@ import { useFullscreen } from "@/hooks/useFullscreen";
 import { useGameSounds } from "@/hooks/useGameSounds";
 import { MatchTimeline, MatchEvent } from "@/components/MatchTimeline";
 import { SeriesProgress } from "@/components/SeriesProgress";
+import { SfxIndicator } from "@/components/SfxIndicator";
 import { cn } from "@/lib/utils";
 
 const TIMER = 20;
