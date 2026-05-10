@@ -730,16 +730,6 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
           >
             {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
           </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={toggleFullscreen}
-            className="h-8 w-8"
-            aria-label="ملء الشاشة"
-            title="ملء الشاشة"
-          >
-            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </Button>
           {match?.is_public_spectate && !finished && (
             <Button size="icon" variant="ghost" onClick={() => {
               const url = `${window.location.origin}/matches/${match.id}/watch`;
