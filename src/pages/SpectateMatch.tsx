@@ -97,18 +97,23 @@ export default function SpectateMatch() {
 
   // SFX on new events / finish
   const lastEvIdRef = useRef<string | null>(null);
+  const [lastSfx, setLastSfx] = useState<import("@/hooks/useGameSounds").SfxKind | null>(null);
+  const [lastSfxTs, setLastSfxTs] = useState(0);
+  const triggerSfx = (k: import("@/hooks/useGameSounds").SfxKind) => { play(k); setLastSfx(k); setLastSfxTs(Date.now()); };
   useEffect(() => {
     const last = events[events.length - 1];
     if (!last || last.id === lastEvIdRef.current) return;
     lastEvIdRef.current = last.id;
     if (last.event_type === "answer") {
       const correct = (last as unknown as { is_correct?: boolean }).is_correct;
-      play(correct ? "correct" : "wrong");
-    } else play("tick");
-  }, [events, play]);
+      triggerSfx(correct ? "correct" : "wrong");
+    } else triggerSfx("tick");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events]);
   useEffect(() => {
-    if (match?.status === "finished" && match.winner_id) play("win");
-  }, [match?.status, match?.winner_id, play]);
+    if (match?.status === "finished" && match.winner_id) triggerSfx("win");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [match?.status, match?.winner_id]);
 
   const timeLeft = useMemo(() => {
     if (!match?.current_question_started_at) return TIMER;
