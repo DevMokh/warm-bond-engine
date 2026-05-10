@@ -79,6 +79,18 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
   const [finished, setFinished] = useState(false);
   const startTimeRef = useRef<number>(Date.now());
   const sessionSavedRef = useRef(false);
+  const { ref: fsRef, isFullscreen, toggle: toggleFs } = useFullscreen<HTMLDivElement>();
+  const { muted, setMuted, play } = useGameSounds();
+
+  // SFX on reveal / finish
+  useEffect(() => {
+    if (!revealed || !pool[index]) return;
+    const isCorrect = selected === pool[index].correct_answer;
+    play(isCorrect ? "correct" : "wrong");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revealed]);
+  useEffect(() => { if (finished) play(correctCount / Math.max(1, index + 1) >= 0.5 ? "win" : "lose"); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finished]);
 
   // Load questions
   useEffect(() => {
