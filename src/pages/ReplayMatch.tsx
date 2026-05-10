@@ -31,6 +31,18 @@ export default function ReplayMatch() {
   const startRef = useRef<number | null>(null);
   const baseRef = useRef<number>(0);
   const { ref, isFullscreen, toggle } = useFullscreen();
+  const { muted, setMuted, play } = useGameSounds();
+  const lastPlayedIdxRef = useRef(0);
+  useEffect(() => {
+    if (cursor > lastPlayedIdxRef.current) {
+      const ev = allEvents[cursor - 1];
+      if (ev?.event_type === "answer") {
+        const correct = (ev as unknown as { is_correct?: boolean }).is_correct;
+        play(correct ? "correct" : "wrong");
+      } else if (ev) play("tick");
+    }
+    lastPlayedIdxRef.current = cursor;
+  }, [cursor, allEvents, play]);
 
   useEffect(() => {
     if (!id) return;
