@@ -140,6 +140,7 @@ export default function ReplayMatch() {
           <div className="flex items-center gap-2 flex-wrap">
             <Badge className="gap-1"><Play className="h-3 w-3" /> إعادة العرض</Badge>
             {matches[0]?.best_of > 1 && <Badge variant="outline">Best-of-{matches[0].best_of}</Badge>}
+            <SfxIndicator kind={lastSfx} muted={muted} ts={lastSfxTs} />
           </div>
           <div className="flex gap-1">
             <Button size="icon" variant="ghost" onClick={() => setMuted(!muted)} className="h-8 w-8" title={muted ? "تشغيل الصوت" : "كتم الصوت"} aria-label="صوت">
