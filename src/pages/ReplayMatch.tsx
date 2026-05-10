@@ -10,6 +10,8 @@ import { useFullscreen } from "@/hooks/useFullscreen";
 import { useGameSounds } from "@/hooks/useGameSounds";
 import { MatchTimeline, MatchEvent } from "@/components/MatchTimeline";
 import { SeriesProgress } from "@/components/SeriesProgress";
+import { SfxIndicator } from "@/components/SfxIndicator";
+import type { SfxKind } from "@/hooks/useGameSounds";
 
 type MatchRow = {
   id: string; challenger_id: string; opponent_id: string;
