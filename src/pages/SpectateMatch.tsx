@@ -37,6 +37,7 @@ export default function SpectateMatch() {
   const [loading, setLoading] = useState(true);
   const [denied, setDenied] = useState(false);
   const { ref, isFullscreen, toggle } = useFullscreen();
+  const { muted, setMuted, play } = useGameSounds();
 
   useEffect(() => {
     if (!id) return;
