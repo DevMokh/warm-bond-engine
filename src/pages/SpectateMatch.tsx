@@ -95,6 +95,21 @@ export default function SpectateMatch() {
     return () => clearInterval(t);
   }, []);
 
+  // SFX on new events / finish
+  const lastEvIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const last = events[events.length - 1];
+    if (!last || last.id === lastEvIdRef.current) return;
+    lastEvIdRef.current = last.id;
+    if (last.event_type === "answer") {
+      const correct = (last as unknown as { is_correct?: boolean }).is_correct;
+      play(correct ? "correct" : "wrong");
+    } else play("tick");
+  }, [events, play]);
+  useEffect(() => {
+    if (match?.status === "finished" && match.winner_id) play("win");
+  }, [match?.status, match?.winner_id, play]);
+
   const timeLeft = useMemo(() => {
     if (!match?.current_question_started_at) return TIMER;
     const elapsed = Math.floor((now - new Date(match.current_question_started_at).getTime()) / 1000);
