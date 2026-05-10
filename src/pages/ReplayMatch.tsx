@@ -10,6 +10,8 @@ import { useFullscreen } from "@/hooks/useFullscreen";
 import { useGameSounds } from "@/hooks/useGameSounds";
 import { MatchTimeline, MatchEvent } from "@/components/MatchTimeline";
 import { SeriesProgress } from "@/components/SeriesProgress";
+import { SfxIndicator } from "@/components/SfxIndicator";
+import type { SfxKind } from "@/hooks/useGameSounds";
 
 type MatchRow = {
   id: string; challenger_id: string; opponent_id: string;
@@ -33,13 +35,17 @@ export default function ReplayMatch() {
   const { ref, isFullscreen, toggle } = useFullscreen();
   const { muted, setMuted, play } = useGameSounds();
   const lastPlayedIdxRef = useRef(0);
+  const [lastSfx, setLastSfx] = useState<SfxKind | null>(null);
+  const [lastSfxTs, setLastSfxTs] = useState(0);
   useEffect(() => {
     if (cursor > lastPlayedIdxRef.current) {
       const ev = allEvents[cursor - 1];
+      let kind: SfxKind | null = null;
       if (ev?.event_type === "answer") {
         const correct = (ev as unknown as { is_correct?: boolean }).is_correct;
-        play(correct ? "correct" : "wrong");
-      } else if (ev) play("tick");
+        kind = correct ? "correct" : "wrong";
+      } else if (ev) kind = "tick";
+      if (kind) { play(kind); setLastSfx(kind); setLastSfxTs(Date.now()); }
     }
     lastPlayedIdxRef.current = cursor;
   }, [cursor, allEvents, play]);
@@ -134,6 +140,7 @@ export default function ReplayMatch() {
           <div className="flex items-center gap-2 flex-wrap">
             <Badge className="gap-1"><Play className="h-3 w-3" /> إعادة العرض</Badge>
             {matches[0]?.best_of > 1 && <Badge variant="outline">Best-of-{matches[0].best_of}</Badge>}
+            <SfxIndicator kind={lastSfx} muted={muted} ts={lastSfxTs} />
           </div>
           <div className="flex gap-1">
             <Button size="icon" variant="ghost" onClick={() => setMuted(!muted)} className="h-8 w-8" title={muted ? "تشغيل الصوت" : "كتم الصوت"} aria-label="صوت">

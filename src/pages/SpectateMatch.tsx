@@ -10,6 +10,7 @@ import { useFullscreen } from "@/hooks/useFullscreen";
 import { useGameSounds } from "@/hooks/useGameSounds";
 import { MatchTimeline, MatchEvent } from "@/components/MatchTimeline";
 import { SeriesProgress } from "@/components/SeriesProgress";
+import { SfxIndicator } from "@/components/SfxIndicator";
 import { cn } from "@/lib/utils";
 
 const TIMER = 20;
@@ -97,18 +98,23 @@ export default function SpectateMatch() {
 
   // SFX on new events / finish
   const lastEvIdRef = useRef<string | null>(null);
+  const [lastSfx, setLastSfx] = useState<import("@/hooks/useGameSounds").SfxKind | null>(null);
+  const [lastSfxTs, setLastSfxTs] = useState(0);
+  const triggerSfx = (k: import("@/hooks/useGameSounds").SfxKind) => { play(k); setLastSfx(k); setLastSfxTs(Date.now()); };
   useEffect(() => {
     const last = events[events.length - 1];
     if (!last || last.id === lastEvIdRef.current) return;
     lastEvIdRef.current = last.id;
     if (last.event_type === "answer") {
       const correct = (last as unknown as { is_correct?: boolean }).is_correct;
-      play(correct ? "correct" : "wrong");
-    } else play("tick");
-  }, [events, play]);
+      triggerSfx(correct ? "correct" : "wrong");
+    } else triggerSfx("tick");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events]);
   useEffect(() => {
-    if (match?.status === "finished" && match.winner_id) play("win");
-  }, [match?.status, match?.winner_id, play]);
+    if (match?.status === "finished" && match.winner_id) triggerSfx("win");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [match?.status, match?.winner_id]);
 
   const timeLeft = useMemo(() => {
     if (!match?.current_question_started_at) return TIMER;
@@ -138,6 +144,7 @@ export default function SpectateMatch() {
             <Badge variant="secondary" className="gap-1"><Eye className="h-3 w-3" /> متفرّج</Badge>
             {match.best_of > 1 && <Badge variant="outline">جولة {match.round_number} من {match.best_of}</Badge>}
             <Badge variant="outline">{match.status}</Badge>
+            <SfxIndicator kind={lastSfx} muted={muted} ts={lastSfxTs} />
           </div>
           <div className="flex gap-1">
             <Button size="icon" variant="ghost" onClick={() => setMuted(!muted)} className="h-8 w-8" aria-label="صوت" title={muted ? "تشغيل الصوت" : "كتم الصوت"}>
