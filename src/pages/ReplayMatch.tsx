@@ -204,6 +204,17 @@ export default function ReplayMatch() {
           </CardContent>
         </Card>
 
+        {matches[0] && (
+          <PlayersCompare
+            events={visibleEvents}
+            challengerId={matches[0].challenger_id}
+            opponentId={matches[0].opponent_id}
+            challengerName={cName}
+            opponentName={oName}
+            totalQuestions={matches[0].questions_count}
+          />
+        )}
+
         <MatchTimeline
           events={visibleEvents}
           challengerName={cName}
