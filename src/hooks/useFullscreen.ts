@@ -12,7 +12,7 @@ type FsDoc = Document & {
   msExitFullscreen?: () => Promise<void>;
 };
 
-export function useFullscreen<T extends HTMLElement = HTMLDivElement>() {
+export function useFullscreen<T extends HTMLElement = HTMLDivElement>(opts?: { autoOnFirstGesture?: boolean }) {
   const ref = useRef<T | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fallback, setFallback] = useState(false); // CSS overlay fallback (iOS Safari)
@@ -83,5 +83,36 @@ export function useFullscreen<T extends HTMLElement = HTMLDivElement>() {
     }
   }, [fallback]);
 
+  // Auto-enter fullscreen on first user gesture (browser policy requires a gesture).
+  // Lock to portrait when supported (mobile game feel).
+  useEffect(() => {
+    if (!opts?.autoOnFirstGesture) return;
+    let used = false;
+    const handler = () => {
+      if (used) return;
+      used = true;
+      window.removeEventListener("pointerdown", handler);
+      window.removeEventListener("keydown", handler);
+      window.removeEventListener("touchstart", handler);
+      if (getFsEl() || fallback) return;
+      toggle().then(() => {
+        try {
+          const so = (screen as Screen & { orientation?: { lock?: (o: string) => Promise<void> } }).orientation;
+          so?.lock?.("portrait").catch(() => {});
+        } catch { /* noop */ }
+      }).catch(() => {});
+    };
+    window.addEventListener("pointerdown", handler, { once: true });
+    window.addEventListener("keydown", handler, { once: true });
+    window.addEventListener("touchstart", handler, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", handler);
+      window.removeEventListener("keydown", handler);
+      window.removeEventListener("touchstart", handler);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opts?.autoOnFirstGesture]);
+
   return { ref, isFullscreen, toggle, fallback };
 }
+
