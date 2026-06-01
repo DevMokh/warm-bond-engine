@@ -11,6 +11,8 @@ import { useGameSounds } from "@/hooks/useGameSounds";
 import { MatchTimeline, MatchEvent } from "@/components/MatchTimeline";
 import { SeriesProgress } from "@/components/SeriesProgress";
 import { SfxIndicator } from "@/components/SfxIndicator";
+import { SpectatorChat } from "@/components/SpectatorChat";
+import { PlayersCompare } from "@/components/PlayersCompare";
 import { cn } from "@/lib/utils";
 
 const TIMER = 20;
