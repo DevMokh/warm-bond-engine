@@ -190,6 +190,33 @@ export type Database = {
         }
         Relationships: []
       }
+      match_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          match_id: string
+          question_index: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          match_id: string
+          question_index?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          match_id?: string
+          question_index?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       matches: {
         Row: {
           best_of: number

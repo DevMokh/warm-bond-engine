@@ -11,6 +11,7 @@ import { useGameSounds } from "@/hooks/useGameSounds";
 import { MatchTimeline, MatchEvent } from "@/components/MatchTimeline";
 import { SeriesProgress } from "@/components/SeriesProgress";
 import { SfxIndicator } from "@/components/SfxIndicator";
+import { PlayersCompare } from "@/components/PlayersCompare";
 import type { SfxKind } from "@/hooks/useGameSounds";
 
 type MatchRow = {
@@ -202,6 +203,17 @@ export default function ReplayMatch() {
             </div>
           </CardContent>
         </Card>
+
+        {matches[0] && (
+          <PlayersCompare
+            events={visibleEvents}
+            challengerId={matches[0].challenger_id}
+            opponentId={matches[0].opponent_id}
+            challengerName={cName}
+            opponentName={oName}
+            totalQuestions={matches[0].questions_count}
+          />
+        )}
 
         <MatchTimeline
           events={visibleEvents}

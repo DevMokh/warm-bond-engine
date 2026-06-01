@@ -11,6 +11,8 @@ import { useGameSounds } from "@/hooks/useGameSounds";
 import { MatchTimeline, MatchEvent } from "@/components/MatchTimeline";
 import { SeriesProgress } from "@/components/SeriesProgress";
 import { SfxIndicator } from "@/components/SfxIndicator";
+import { SpectatorChat } from "@/components/SpectatorChat";
+import { PlayersCompare } from "@/components/PlayersCompare";
 import { cn } from "@/lib/utils";
 
 const TIMER = 20;
@@ -197,6 +199,20 @@ export default function SpectateMatch() {
             currentRound={match.round_number}
           />
         )}
+
+        <PlayersCompare
+          events={events}
+          challengerId={match.challenger_id}
+          opponentId={match.opponent_id}
+          challengerName={cName}
+          opponentName={oName}
+          totalQuestions={total}
+        />
+
+        <SpectatorChat
+          matchId={match.id}
+          currentQuestionIndex={Math.max(match.challenger_progress, match.opponent_progress)}
+        />
 
         <MatchTimeline
           events={events}
