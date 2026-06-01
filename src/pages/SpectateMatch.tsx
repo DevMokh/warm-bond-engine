@@ -200,6 +200,20 @@ export default function SpectateMatch() {
           />
         )}
 
+        <PlayersCompare
+          events={events}
+          challengerId={match.challenger_id}
+          opponentId={match.opponent_id}
+          challengerName={cName}
+          opponentName={oName}
+          totalQuestions={total}
+        />
+
+        <SpectatorChat
+          matchId={match.id}
+          currentQuestionIndex={Math.max(match.challenger_progress, match.opponent_progress)}
+        />
+
         <MatchTimeline
           events={events}
           challengerName={cName}
