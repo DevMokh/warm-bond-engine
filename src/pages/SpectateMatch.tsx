@@ -39,7 +39,7 @@ export default function SpectateMatch() {
   const [now, setNow] = useState(Date.now());
   const [loading, setLoading] = useState(true);
   const [denied, setDenied] = useState(false);
-  const { ref, isFullscreen, toggle } = useFullscreen();
+  const { ref, isFullscreen, toggle } = useFullscreen({ autoOnFirstGesture: true });
   const { muted, setMuted, play } = useGameSounds();
 
   useEffect(() => {
