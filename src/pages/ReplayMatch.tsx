@@ -11,6 +11,7 @@ import { useGameSounds } from "@/hooks/useGameSounds";
 import { MatchTimeline, MatchEvent } from "@/components/MatchTimeline";
 import { SeriesProgress } from "@/components/SeriesProgress";
 import { SfxIndicator } from "@/components/SfxIndicator";
+import { PlayersCompare } from "@/components/PlayersCompare";
 import type { SfxKind } from "@/hooks/useGameSounds";
 
 type MatchRow = {
