@@ -33,7 +33,7 @@ export default function ReplayMatch() {
   const [cursor, setCursor] = useState(0); // index of next event to reveal
   const startRef = useRef<number | null>(null);
   const baseRef = useRef<number>(0);
-  const { ref, isFullscreen, toggle } = useFullscreen();
+  const { ref, isFullscreen, toggle } = useFullscreen({ autoOnFirstGesture: true });
   const { muted, setMuted, play } = useGameSounds();
   const lastPlayedIdxRef = useRef(0);
   const [lastSfx, setLastSfx] = useState<SfxKind | null>(null);
