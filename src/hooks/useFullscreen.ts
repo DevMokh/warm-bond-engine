@@ -12,7 +12,7 @@ type FsDoc = Document & {
   msExitFullscreen?: () => Promise<void>;
 };
 
-export function useFullscreen<T extends HTMLElement = HTMLDivElement>() {
+export function useFullscreen<T extends HTMLElement = HTMLDivElement>(opts?: { autoOnFirstGesture?: boolean }) {
   const ref = useRef<T | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fallback, setFallback] = useState(false); // CSS overlay fallback (iOS Safari)
