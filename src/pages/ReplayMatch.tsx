@@ -12,6 +12,8 @@ import { MatchTimeline, MatchEvent } from "@/components/MatchTimeline";
 import { SeriesProgress } from "@/components/SeriesProgress";
 import { SfxIndicator } from "@/components/SfxIndicator";
 import { PlayersCompare } from "@/components/PlayersCompare";
+import { PlayerHud } from "@/components/PlayerHud";
+import { MatchSplash } from "@/components/MatchSplash";
 import type { SfxKind } from "@/hooks/useGameSounds";
 
 type MatchRow = {
