@@ -139,7 +139,18 @@ export default function ReplayMatch() {
 
   return (
     <div ref={ref} className="bg-background min-h-[100svh] p-4 sm:p-6">
+      {!splashDone && (
+        <MatchSplash
+          title="إعادة العرض"
+          subtitle={`${cName} ضد ${oName}`}
+          countdown={false}
+          loaded
+          minMs={1000}
+          onReady={() => setSplashDone(true)}
+        />
+      )}
       <div className="max-w-3xl mx-auto space-y-4">
+        <div className="flex items-center justify-end mb-2"><PlayerHud compact /></div>
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 flex-wrap">
             <Badge className="gap-1"><Play className="h-3 w-3" /> إعادة العرض</Badge>
