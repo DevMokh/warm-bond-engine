@@ -244,16 +244,29 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
       <DialogContent ref={fsRef} className="max-w-2xl max-h-[92vh] overflow-y-auto data-[fs=true]:max-w-none data-[fs=true]:max-h-none data-[fs=true]:h-screen data-[fs=true]:w-screen data-[fs=true]:rounded-none" data-fs={isFullscreen || undefined}>
-        {/* Floating controls */}
+        {/* Pre-match splash */}
+        {open && !splashDone && pool.length > 0 && !finished && (
+          <MatchSplash
+            title={config.title}
+            subtitle={`${categoryTitle} · ${branchTitle}`}
+            countdown
+            loaded={!loading}
+            onReady={() => setSplashDone(true)}
+          />
+        )}
+        {/* Floating controls + HUD */}
         {!loading && pool.length > 0 && !finished && (
-          <div className="absolute top-3 left-3 z-20 flex gap-1">
-            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setMuted(!muted)} title={muted ? "تشغيل الصوت" : "كتم الصوت"} aria-label="صوت">
-              {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-            </Button>
-            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={toggleFs} title="ملء الشاشة" aria-label="ملء الشاشة">
-              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            </Button>
-          </div>
+          <>
+            <div className="absolute top-3 left-3 z-20 flex gap-1">
+              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setMuted(!muted)} title={muted ? "تشغيل الصوت" : "كتم الصوت"} aria-label="صوت">
+                {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              </Button>
+              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={toggleFs} title="ملء الشاشة" aria-label="ملء الشاشة">
+                {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+              </Button>
+            </div>
+            <div className="absolute top-3 right-12 z-20"><PlayerHud compact /></div>
+          </>
         )}
         {loading ? (
           <div className="py-16 flex flex-col items-center gap-3">
