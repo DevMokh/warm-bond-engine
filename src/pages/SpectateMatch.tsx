@@ -36,6 +36,7 @@ type Profile = { user_id: string; display_name: string | null; username: string 
 
 export default function SpectateMatch() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const [match, setMatch] = useState<MatchRow | null>(null);
   const [seriesMatches, setSeriesMatches] = useState<MatchRow[]>([]);
   const [events, setEvents] = useState<MatchEvent[]>([]);
@@ -43,8 +44,10 @@ export default function SpectateMatch() {
   const [now, setNow] = useState(Date.now());
   const [loading, setLoading] = useState(true);
   const [denied, setDenied] = useState(false);
+  const [splashDone, setSplashDone] = useState(false);
   const { ref, isFullscreen, toggle } = useFullscreen({ autoOnFirstGesture: true });
   const { muted, setMuted, play } = useGameSounds();
+  const notifiedRef = useRef(false);
 
   useEffect(() => {
     if (!id) return;
