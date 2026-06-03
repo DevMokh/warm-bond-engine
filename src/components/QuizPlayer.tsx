@@ -114,6 +114,9 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
     setTimeLeft(config.timerSeconds);
     startTimeRef.current = Date.now();
     sessionSavedRef.current = false;
+    setSplashDone(false);
+
+
 
     (async () => {
       let query = supabase
