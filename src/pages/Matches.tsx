@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { MatchPlayer } from "@/components/MatchPlayer";
+import { sendNotification } from "@/hooks/useNotifications";
 
 interface Profile { user_id: string; display_name: string | null; username: string | null; level: number; }
 interface Match {
