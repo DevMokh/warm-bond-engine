@@ -212,6 +212,7 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
     sessionSavedRef.current = true;
     const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
     const xp = Math.floor(score / 2) + correctCount * 5;
+    const coins = correctCount * 2 + (totalQ > 0 && correctCount === totalQ ? 20 : 0); // perfect bonus
     await supabase.from("game_sessions").insert({
       user_id: user.id,
       mode: "solo",
@@ -223,7 +224,11 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
       xp_earned: xp,
       duration_seconds: duration,
     });
+    const award = await awardGame({ xp, coins });
+    if (award?.leveledUp) toast.success(`🎉 وصلت للمستوى ${award.level}!`);
+    else if (coins > 0) toast.success(`+${xp} XP · +${coins} 🪙`);
   };
+
 
   const handleClose = () => {
     if (!finished && pool.length > 0 && !sessionSavedRef.current) {
