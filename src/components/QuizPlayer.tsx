@@ -84,6 +84,10 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
   const sessionSavedRef = useRef(false);
   const { ref: fsRef, isFullscreen, toggle: toggleFs } = useFullscreen<HTMLDivElement>({ autoOnFirstGesture: true });
   const { muted, setMuted, play } = useGameSounds();
+  const { awardGame } = useProfileStats();
+  const [splashDone, setSplashDone] = useState(false);
+
+
 
   // SFX on reveal / finish
   useEffect(() => {
