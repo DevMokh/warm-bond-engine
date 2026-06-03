@@ -11,6 +11,9 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import { useGameSounds } from "@/hooks/useGameSounds";
+import { useProfileStats } from "@/hooks/useProfileStats";
+import { PlayerHud } from "./PlayerHud";
+import { MatchSplash } from "./MatchSplash";
 
 export type ModeConfig = {
   id: string;
