@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { NotificationsBell } from "@/components/NotificationsBell";
+import { PlayerHud } from "@/components/PlayerHud";
 
 export const Navbar = () => {
   const { user, signOut } = useAuth();
