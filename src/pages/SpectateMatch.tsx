@@ -13,6 +13,10 @@ import { SeriesProgress } from "@/components/SeriesProgress";
 import { SfxIndicator } from "@/components/SfxIndicator";
 import { SpectatorChat } from "@/components/SpectatorChat";
 import { PlayersCompare } from "@/components/PlayersCompare";
+import { PlayerHud } from "@/components/PlayerHud";
+import { MatchSplash } from "@/components/MatchSplash";
+import { sendNotification } from "@/hooks/useNotifications";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
 const TIMER = 20;
