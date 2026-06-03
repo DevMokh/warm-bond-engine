@@ -80,6 +80,8 @@ export const Navbar = () => {
           </nav>
 
           <div className="flex items-center gap-2">
+            {user && <PlayerHud compact className="hidden lg:inline-flex" />}
+            {user && <NotificationsBell />}
             {user ? (
               <Button variant="ghost" size="sm" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4" />
@@ -93,6 +95,14 @@ export const Navbar = () => {
           </div>
         </div>
       </header>
+
+      {/* Mobile floating top bar: HUD + bell only (does not block bottom nav) */}
+      {user && (
+        <div className="md:hidden fixed top-2 left-2 right-2 z-40 flex items-center justify-between pointer-events-none">
+          <div className="pointer-events-auto"><PlayerHud compact /></div>
+          <div className="pointer-events-auto"><NotificationsBell /></div>
+        </div>
+      )}
 
       {/* Mobile bottom nav with sign out integrated */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass border-t border-border/50">
