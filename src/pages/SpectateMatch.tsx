@@ -160,7 +160,17 @@ export default function SpectateMatch() {
 
   return (
     <div ref={ref} className="bg-background min-h-[100svh] p-4 sm:p-6">
+      {!splashDone && (
+        <MatchSplash
+          title={match.best_of > 1 ? `جولة ${match.round_number}/${match.best_of}` : "بدء المتابعة"}
+          subtitle={`${cName} ضد ${oName}`}
+          countdown
+          loaded
+          onReady={() => setSplashDone(true)}
+        />
+      )}
       <div className="max-w-3xl mx-auto space-y-4">
+        <div className="flex items-center justify-end mb-2"><PlayerHud compact /></div>
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="secondary" className="gap-1"><Eye className="h-3 w-3" /> متفرّج</Badge>
