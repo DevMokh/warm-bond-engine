@@ -154,7 +154,7 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
 
   // Timer
   useEffect(() => {
-    if (!open || loading || finished || revealed || !config?.timerSeconds) return;
+    if (!open || loading || finished || revealed || !splashDone || !config?.timerSeconds) return;
     if (timeLeft <= 0) {
       handleAnswer(-1); // timeout
       return;
