@@ -300,16 +300,54 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          data: Json
+          id: string
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          data?: Json
+          id?: string
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          data?: Json
+          id?: string
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           age_group: Database["public"]["Enums"]["age_group"] | null
           avatar_url: string | null
+          coins: number
           created_at: string
+          current_streak: number
           display_name: string | null
           games_played: number
           games_won: number
           id: string
+          last_daily_claim: string | null
+          last_play_date: string | null
           level: number
+          longest_streak: number
           total_score: number
           total_xp: number
           updated_at: string
@@ -319,12 +357,17 @@ export type Database = {
         Insert: {
           age_group?: Database["public"]["Enums"]["age_group"] | null
           avatar_url?: string | null
+          coins?: number
           created_at?: string
+          current_streak?: number
           display_name?: string | null
           games_played?: number
           games_won?: number
           id?: string
+          last_daily_claim?: string | null
+          last_play_date?: string | null
           level?: number
+          longest_streak?: number
           total_score?: number
           total_xp?: number
           updated_at?: string
@@ -334,12 +377,17 @@ export type Database = {
         Update: {
           age_group?: Database["public"]["Enums"]["age_group"] | null
           avatar_url?: string | null
+          coins?: number
           created_at?: string
+          current_streak?: number
           display_name?: string | null
           games_played?: number
           games_won?: number
           id?: string
+          last_daily_claim?: string | null
+          last_play_date?: string | null
           level?: number
+          longest_streak?: number
           total_score?: number
           total_xp?: number
           updated_at?: string

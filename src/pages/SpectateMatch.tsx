@@ -13,6 +13,10 @@ import { SeriesProgress } from "@/components/SeriesProgress";
 import { SfxIndicator } from "@/components/SfxIndicator";
 import { SpectatorChat } from "@/components/SpectatorChat";
 import { PlayersCompare } from "@/components/PlayersCompare";
+import { PlayerHud } from "@/components/PlayerHud";
+import { MatchSplash } from "@/components/MatchSplash";
+import { sendNotification } from "@/hooks/useNotifications";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
 const TIMER = 20;
@@ -32,6 +36,7 @@ type Profile = { user_id: string; display_name: string | null; username: string 
 
 export default function SpectateMatch() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const [match, setMatch] = useState<MatchRow | null>(null);
   const [seriesMatches, setSeriesMatches] = useState<MatchRow[]>([]);
   const [events, setEvents] = useState<MatchEvent[]>([]);
@@ -39,8 +44,10 @@ export default function SpectateMatch() {
   const [now, setNow] = useState(Date.now());
   const [loading, setLoading] = useState(true);
   const [denied, setDenied] = useState(false);
+  const [splashDone, setSplashDone] = useState(false);
   const { ref, isFullscreen, toggle } = useFullscreen({ autoOnFirstGesture: true });
   const { muted, setMuted, play } = useGameSounds();
+  const notifiedRef = useRef(false);
 
   useEffect(() => {
     if (!id) return;
@@ -118,6 +125,19 @@ export default function SpectateMatch() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [match?.status, match?.winner_id]);
 
+  // Notify both players that a spectator joined (once per page load).
+  useEffect(() => {
+    if (!user || !match || notifiedRef.current) return;
+    if (user.id === match.challenger_id || user.id === match.opponent_id) return; // self watching
+    if (!match.is_public_spectate) return;
+    notifiedRef.current = true;
+    const url = `/matches/${match.id}/watch`;
+    const title = "حد بيتفرّج عليك 👀";
+    const body = "متفرّج جديد دخل يشوف مباراتك";
+    sendNotification({ toUserId: match.challenger_id, type: "spectator", title, body, data: { url } });
+    sendNotification({ toUserId: match.opponent_id, type: "spectator", title, body, data: { url } });
+  }, [user, match]);
+
   const timeLeft = useMemo(() => {
     if (!match?.current_question_started_at) return TIMER;
     const elapsed = Math.floor((now - new Date(match.current_question_started_at).getTime()) / 1000);
@@ -140,7 +160,17 @@ export default function SpectateMatch() {
 
   return (
     <div ref={ref} className="bg-background min-h-[100svh] p-4 sm:p-6">
+      {!splashDone && (
+        <MatchSplash
+          title={match.best_of > 1 ? `جولة ${match.round_number}/${match.best_of}` : "بدء المتابعة"}
+          subtitle={`${cName} ضد ${oName}`}
+          countdown
+          loaded
+          onReady={() => setSplashDone(true)}
+        />
+      )}
       <div className="max-w-3xl mx-auto space-y-4">
+        <div className="flex items-center justify-end mb-2"><PlayerHud compact /></div>
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="secondary" className="gap-1"><Eye className="h-3 w-3" /> متفرّج</Badge>

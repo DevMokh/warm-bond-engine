@@ -11,6 +11,9 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import { useGameSounds } from "@/hooks/useGameSounds";
+import { useProfileStats } from "@/hooks/useProfileStats";
+import { PlayerHud } from "./PlayerHud";
+import { MatchSplash } from "./MatchSplash";
 
 export type ModeConfig = {
   id: string;
@@ -81,6 +84,10 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
   const sessionSavedRef = useRef(false);
   const { ref: fsRef, isFullscreen, toggle: toggleFs } = useFullscreen<HTMLDivElement>({ autoOnFirstGesture: true });
   const { muted, setMuted, play } = useGameSounds();
+  const { awardGame } = useProfileStats();
+  const [splashDone, setSplashDone] = useState(false);
+
+
 
   // SFX on reveal / finish
   useEffect(() => {
@@ -107,6 +114,9 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
     setTimeLeft(config.timerSeconds);
     startTimeRef.current = Date.now();
     sessionSavedRef.current = false;
+    setSplashDone(false);
+
+
 
     (async () => {
       let query = supabase
@@ -144,7 +154,7 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
 
   // Timer
   useEffect(() => {
-    if (!open || loading || finished || revealed || !config?.timerSeconds) return;
+    if (!open || loading || finished || revealed || !splashDone || !config?.timerSeconds) return;
     if (timeLeft <= 0) {
       handleAnswer(-1); // timeout
       return;
@@ -202,6 +212,7 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
     sessionSavedRef.current = true;
     const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
     const xp = Math.floor(score / 2) + correctCount * 5;
+    const coins = correctCount * 2 + (totalQ > 0 && correctCount === totalQ ? 20 : 0); // perfect bonus
     await supabase.from("game_sessions").insert({
       user_id: user.id,
       mode: "solo",
@@ -213,7 +224,11 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
       xp_earned: xp,
       duration_seconds: duration,
     });
+    const award = await awardGame({ xp, coins });
+    if (award?.leveledUp) toast.success(`🎉 وصلت للمستوى ${award.level}!`);
+    else if (coins > 0) toast.success(`+${xp} XP · +${coins} 🪙`);
   };
+
 
   const handleClose = () => {
     if (!finished && pool.length > 0 && !sessionSavedRef.current) {
@@ -229,16 +244,29 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
       <DialogContent ref={fsRef} className="max-w-2xl max-h-[92vh] overflow-y-auto data-[fs=true]:max-w-none data-[fs=true]:max-h-none data-[fs=true]:h-screen data-[fs=true]:w-screen data-[fs=true]:rounded-none" data-fs={isFullscreen || undefined}>
-        {/* Floating controls */}
+        {/* Pre-match splash */}
+        {open && !splashDone && pool.length > 0 && !finished && (
+          <MatchSplash
+            title={config.title}
+            subtitle={`${categoryTitle} · ${branchTitle}`}
+            countdown
+            loaded={!loading}
+            onReady={() => setSplashDone(true)}
+          />
+        )}
+        {/* Floating controls + HUD */}
         {!loading && pool.length > 0 && !finished && (
-          <div className="absolute top-3 left-3 z-20 flex gap-1">
-            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setMuted(!muted)} title={muted ? "تشغيل الصوت" : "كتم الصوت"} aria-label="صوت">
-              {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-            </Button>
-            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={toggleFs} title="ملء الشاشة" aria-label="ملء الشاشة">
-              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            </Button>
-          </div>
+          <>
+            <div className="absolute top-3 left-3 z-20 flex gap-1">
+              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setMuted(!muted)} title={muted ? "تشغيل الصوت" : "كتم الصوت"} aria-label="صوت">
+                {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              </Button>
+              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={toggleFs} title="ملء الشاشة" aria-label="ملء الشاشة">
+                {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+              </Button>
+            </div>
+            <div className="absolute top-3 right-12 z-20"><PlayerHud compact /></div>
+          </>
         )}
         {loading ? (
           <div className="py-16 flex flex-col items-center gap-3">

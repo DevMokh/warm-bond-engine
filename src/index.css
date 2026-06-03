@@ -210,3 +210,10 @@
 }
 .animate-float-up { animation: float-up 1.8s ease-out forwards; }
 
+/* Splash shimmer */
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+
