@@ -40,6 +40,7 @@ export default function ReplayMatch() {
   const lastPlayedIdxRef = useRef(0);
   const [lastSfx, setLastSfx] = useState<SfxKind | null>(null);
   const [lastSfxTs, setLastSfxTs] = useState(0);
+  const [splashDone, setSplashDone] = useState(false);
   useEffect(() => {
     if (cursor > lastPlayedIdxRef.current) {
       const ev = allEvents[cursor - 1];
