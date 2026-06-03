@@ -113,11 +113,33 @@ const Matches = () => {
       round_number: 1,
     });
     if (error) toast.error("فشل التحدي");
-    else { toast.success("تم إرسال التحدي ⚔️"); setOpen(false); load(); }
+    else {
+      toast.success("تم إرسال التحدي ⚔️");
+      // Notify opponent
+      sendNotification({
+        toUserId: form.opponent_id,
+        type: "challenge",
+        title: "تحدّاك حد جديد ⚔️",
+        body: "في تحدي مستنّيك دلوقتي — افتح صفحة المباريات",
+        data: { url: "/matches" },
+      });
+      setOpen(false);
+      load();
+    }
   };
 
   const accept = async (id: string) => {
     await supabase.from("matches").update({ status: "active" }).eq("id", id);
+    const m = matches.find((x) => x.id === id);
+    if (m) {
+      sendNotification({
+        toUserId: m.challenger_id,
+        type: "your_turn",
+        title: "خصمك جاهز — دورك تلعب 🎯",
+        body: "اللي تحدّيته قبل التحدي وبدأ. ابدأ مباراتك دلوقتي",
+        data: { url: "/matches" },
+      });
+    }
     toast.success("قبلت التحدي - ابدأ اللعب!");
     setPlayingId(id);
     load();
