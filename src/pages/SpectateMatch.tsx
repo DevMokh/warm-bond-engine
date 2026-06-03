@@ -125,6 +125,19 @@ export default function SpectateMatch() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [match?.status, match?.winner_id]);
 
+  // Notify both players that a spectator joined (once per page load).
+  useEffect(() => {
+    if (!user || !match || notifiedRef.current) return;
+    if (user.id === match.challenger_id || user.id === match.opponent_id) return; // self watching
+    if (!match.is_public_spectate) return;
+    notifiedRef.current = true;
+    const url = `/matches/${match.id}/watch`;
+    const title = "حد بيتفرّج عليك 👀";
+    const body = "متفرّج جديد دخل يشوف مباراتك";
+    sendNotification({ toUserId: match.challenger_id, type: "spectator", title, body, data: { url } });
+    sendNotification({ toUserId: match.opponent_id, type: "spectator", title, body, data: { url } });
+  }, [user, match]);
+
   const timeLeft = useMemo(() => {
     if (!match?.current_question_started_at) return TIMER;
     const elapsed = Math.floor((now - new Date(match.current_question_started_at).getTime()) / 1000);
