@@ -98,11 +98,13 @@ export async function sendNotification(args: {
   data?: Record<string, unknown>;
 }) {
   const { toUserId, type, title, body, data } = args;
-  await supabase.from("notifications").insert({
+  const row = {
     user_id: toUserId,
     type,
     title,
     body: body ?? null,
-    data: data ?? {},
-  });
+    data: (data ?? {}) as never,
+  };
+  await supabase.from("notifications").insert(row);
 }
+
