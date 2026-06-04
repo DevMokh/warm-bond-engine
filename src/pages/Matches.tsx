@@ -115,12 +115,18 @@ const Matches = () => {
     if (error) toast.error("فشل التحدي");
     else {
       toast.success("تم إرسال التحدي ⚔️");
-      // Notify opponent
+      // Fetch sender + category names for richer notification text
+      const [{ data: me }, { data: cat }] = await Promise.all([
+        supabase.from("profiles").select("display_name, username").eq("user_id", user.id).maybeSingle(),
+        form.category_id ? supabase.from("categories").select("name_ar").eq("id", form.category_id).maybeSingle() : Promise.resolve({ data: null }),
+      ]);
+      const senderName = me?.display_name || me?.username || "لاعب";
+      const catName = cat?.name_ar ? ` · ${cat.name_ar}` : "";
       sendNotification({
         toUserId: form.opponent_id,
         type: "challenge",
-        title: "تحدّاك حد جديد ⚔️",
-        body: "في تحدي مستنّيك دلوقتي — افتح صفحة المباريات",
+        title: `${senderName} بيتحدّاك ⚔️`,
+        body: `${form.questions_count} أسئلة (${form.difficulty})${catName} — اقبل التحدي وابدأ دلوقتي`,
         data: { url: "/matches" },
       });
       setOpen(false);
@@ -132,11 +138,13 @@ const Matches = () => {
     await supabase.from("matches").update({ status: "active" }).eq("id", id);
     const m = matches.find((x) => x.id === id);
     if (m) {
+      const { data: me } = await supabase.from("profiles").select("display_name, username").eq("user_id", user.id).maybeSingle();
+      const accepterName = me?.display_name || me?.username || "خصمك";
       sendNotification({
         toUserId: m.challenger_id,
         type: "your_turn",
-        title: "خصمك جاهز — دورك تلعب 🎯",
-        body: "اللي تحدّيته قبل التحدي وبدأ. ابدأ مباراتك دلوقتي",
+        title: `${accepterName} قبل تحدّيك — دورك تلعب 🎯`,
+        body: "خصمك خلّص جوّلته. افتح المباراة والعب دورك قبل ما الوقت يخلص",
         data: { url: "/matches" },
       });
     }

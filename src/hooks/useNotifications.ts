@@ -45,15 +45,19 @@ export function useNotifications() {
         (p) => {
           const n = p.new as AppNotification;
           setItems((curr) => [n, ...curr].slice(0, 50));
-          // in-app toast
-          toast(n.title, { description: n.body ?? undefined });
+          const url = (n.data?.url as string | undefined) || "/matches";
+          // in-app toast: full title + body + action button + longer duration
+          toast(n.title, {
+            description: n.body ?? undefined,
+            duration: 8000,
+            action: { label: "افتح", onClick: () => { window.location.href = url; } },
+          });
           // browser push (foreground)
           if (supportsNotif() && Notification.permission === "granted") {
             try {
               const notif = new Notification(n.title, { body: n.body ?? undefined, icon: "/icon-192.png", badge: "/icon-192.png", tag: n.id });
               notif.onclick = () => {
                 window.focus();
-                const url = (n.data?.url as string | undefined) || "/matches";
                 window.location.href = url;
                 notif.close();
               };
