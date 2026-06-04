@@ -132,10 +132,14 @@ export default function SpectateMatch() {
     if (!match.is_public_spectate) return;
     notifiedRef.current = true;
     const url = `/matches/${match.id}/watch`;
-    const title = "حد بيتفرّج عليك 👀";
-    const body = "متفرّج جديد دخل يشوف مباراتك";
-    sendNotification({ toUserId: match.challenger_id, type: "spectator", title, body, data: { url } });
-    sendNotification({ toUserId: match.opponent_id, type: "spectator", title, body, data: { url } });
+    (async () => {
+      const { data: me } = await supabase.from("profiles").select("display_name, username").eq("user_id", user.id).maybeSingle();
+      const watcher = me?.display_name || me?.username || "متفرّج";
+      const title = `${watcher} بيتفرّج على مباراتك 👀`;
+      const body = "حد دخل لايف يشوفك بتلعب — وَرّيله مهارتك!";
+      sendNotification({ toUserId: match.challenger_id, type: "spectator", title, body, data: { url } });
+      sendNotification({ toUserId: match.opponent_id, type: "spectator", title, body, data: { url } });
+    })();
   }, [user, match]);
 
   const timeLeft = useMemo(() => {
