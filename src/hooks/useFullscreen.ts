@@ -84,9 +84,20 @@ export function useFullscreen<T extends HTMLElement = HTMLDivElement>(opts?: { a
   }, [fallback]);
 
   // Auto-enter fullscreen on first user gesture (browser policy requires a gesture).
-  // Lock to portrait when supported (mobile game feel).
+  // SKIP entirely when running as installed PWA (display-mode: standalone) — the app
+  // is already immersive there, and calling the Fullscreen API on top of standalone
+  // mode causes blank/black screens on some Android builds.
   useEffect(() => {
     if (!opts?.autoOnFirstGesture) return;
+    // Detect standalone PWA / installed app — skip auto-fullscreen.
+    const isStandalone =
+      typeof window !== "undefined" &&
+      (window.matchMedia?.("(display-mode: standalone)").matches ||
+        window.matchMedia?.("(display-mode: fullscreen)").matches ||
+        // iOS Safari legacy
+        (window.navigator as Navigator & { standalone?: boolean }).standalone === true);
+    if (isStandalone) return;
+
     let used = false;
     const handler = () => {
       if (used) return;
@@ -94,7 +105,7 @@ export function useFullscreen<T extends HTMLElement = HTMLDivElement>(opts?: { a
       window.removeEventListener("pointerdown", handler);
       window.removeEventListener("keydown", handler);
       window.removeEventListener("touchstart", handler);
-      if (getFsEl() || fallback) return;
+      if (!ref.current || getFsEl() || fallback) return;
       toggle().then(() => {
         try {
           const so = (screen as Screen & { orientation?: { lock?: (o: string) => Promise<void> } }).orientation;
