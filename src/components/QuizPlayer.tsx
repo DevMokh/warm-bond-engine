@@ -434,26 +434,26 @@ const ResultsView = ({ score, correct, total, modeTitle, onClose }: {
   const message = pct >= 80 ? "أداء أسطوري!" : pct >= 50 ? "كويس جداً، استمر!" : "حاول تاني، هتطلع أحسن!";
 
   return (
-    <div className="py-8 text-center space-y-5">
-      <div className="text-6xl">{emoji}</div>
+    <div className="py-6 sm:py-8 text-center space-y-4 sm:space-y-5">
+      <div className="text-[52px] sm:text-6xl leading-none">{emoji}</div>
       <div>
-        <h2 className="text-2xl font-extrabold">{message}</h2>
+        <h2 className="text-xl sm:text-2xl font-extrabold">{message}</h2>
         <p className="text-sm text-muted-foreground mt-1">{modeTitle}</p>
       </div>
-      <div className="grid grid-cols-3 gap-3 max-w-md mx-auto">
-        <Card><CardContent className="p-4">
-          <Trophy className="h-5 w-5 text-primary mx-auto mb-1" />
-          <div className="text-2xl font-extrabold">{score}</div>
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-md mx-auto">
+        <Card><CardContent className="p-3 sm:p-4">
+          <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-primary mx-auto mb-1" />
+          <div className="text-lg sm:text-2xl font-extrabold">{score}</div>
           <div className="text-[11px] text-muted-foreground">النقاط</div>
         </CardContent></Card>
-        <Card><CardContent className="p-4">
-          <Check className="h-5 w-5 text-success mx-auto mb-1" />
-          <div className="text-2xl font-extrabold">{correct}/{total}</div>
+        <Card><CardContent className="p-3 sm:p-4">
+          <Check className="h-4 w-4 sm:h-5 sm:w-5 text-success mx-auto mb-1" />
+          <div className="text-lg sm:text-2xl font-extrabold">{correct}/{total}</div>
           <div className="text-[11px] text-muted-foreground">صح</div>
         </CardContent></Card>
-        <Card><CardContent className="p-4">
-          <div className="text-primary text-lg font-bold mx-auto mb-1">%</div>
-          <div className="text-2xl font-extrabold">{pct}%</div>
+        <Card><CardContent className="p-3 sm:p-4">
+          <div className="text-primary text-base sm:text-lg font-bold mx-auto mb-1">%</div>
+          <div className="text-lg sm:text-2xl font-extrabold">{pct}%</div>
           <div className="text-[11px] text-muted-foreground">دقة</div>
         </CardContent></Card>
       </div>
