@@ -309,37 +309,37 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
             onClose={onClose}
           />
         ) : current ? (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {/* Header: category pills + close */}
             <div className="flex items-center justify-between gap-2">
-              <button onClick={handleClose} className="text-muted-foreground hover:text-foreground p-1 -m-1">
+              <button onClick={handleClose} className="text-muted-foreground hover:text-foreground p-1 -m-1" aria-label="إغلاق">
                 <X className="h-5 w-5" />
               </button>
               <div className="flex items-center gap-2 flex-wrap justify-end">
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-warning/20 text-warning border border-warning/30">
+                <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[11px] sm:text-xs font-bold bg-warning/20 text-warning border border-warning/30">
                   {config.title}
                 </span>
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-secondary/60 text-foreground border border-border/50">
+                <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-secondary/60 text-foreground border border-border/50">
                   {branchTitle}
                 </span>
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-secondary/60 text-foreground border border-border/50">
+                <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-secondary/60 text-foreground border border-border/50">
                   {categoryTitle}
                 </span>
               </div>
             </div>
 
             {/* Stats bar: timer left, score + progress right */}
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center justify-between text-xs sm:text-sm">
               {config.timerSeconds > 0 ? (
                 <div className={cn(
-                  "flex items-center gap-1.5 font-bold text-base",
+                  "flex items-center gap-1.5 font-bold text-sm sm:text-base",
                   timeLeft <= 3 && "text-destructive animate-pulse"
                 )}>
                   <Timer className="h-4 w-4" />
                   <span>{timeLeft}s</span>
                 </div>
               ) : <span />}
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2.5 sm:gap-4">
                 {config.lives > 0 && (
                   <div className="flex items-center gap-1">
                     {Array.from({ length: config.lives }).map((_, i) => (
@@ -351,10 +351,10 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
                   </div>
                 )}
                 <span className="inline-flex items-center gap-1 font-bold text-warning">
-                  <span className="text-xl">⭐</span>
-                  <span className="text-base">{score}</span>
+                  <span className="text-lg sm:text-xl">⭐</span>
+                  <span className="text-sm sm:text-base">{score}</span>
                 </span>
-                <span className="font-bold text-base">
+                <span className="font-bold text-sm sm:text-base">
                   {totalQ > 0 ? `${index + 1} / ${totalQ}` : `${index + 1}`}
                 </span>
               </div>
@@ -364,18 +364,18 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
 
             {/* Question */}
             <Card className="bg-gradient-to-br from-warning/10 to-warning/5 border-warning/30 border-2">
-              <CardContent className="p-5 md:p-6">
-                <div className="flex items-center justify-end mb-3">
+              <CardContent className="p-[11px] sm:p-5 md:p-6">
+                <div className="flex items-center justify-end mb-2 sm:mb-3">
                   <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-warning/20 text-warning">
                     {current.difficulty === "easy" ? "سهل" : current.difficulty === "hard" ? "صعب" : "متوسط"}
                   </span>
                 </div>
-                <h2 className="text-lg md:text-xl font-bold leading-relaxed text-right">{current.question}</h2>
+                <h2 className="text-base md:text-xl font-bold leading-relaxed text-right">{current.question}</h2>
               </CardContent>
             </Card>
 
             {/* Options */}
-            <div className="grid grid-cols-1 gap-2.5">
+            <div className="grid grid-cols-1 gap-2 sm:gap-2.5">
               {current.options.map((opt, i) => {
                 const isCorrect = i === current.correct_answer;
                 const isSelected = selected === i;
@@ -387,7 +387,7 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
                     onClick={() => handleAnswer(i)}
                     disabled={revealed}
                     className={cn(
-                      "text-right p-4 rounded-xl border-2 transition-all flex items-center justify-between gap-3",
+                      "text-right p-[11px] sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all flex items-center justify-between gap-2.5 sm:gap-3",
                       "hover:border-primary/50 hover:bg-primary/5",
                       !revealed && "border-border bg-card",
                       showCorrect && "border-success bg-success/10 text-success",
@@ -395,9 +395,9 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
                       revealed && !isCorrect && !isSelected && "opacity-50",
                     )}
                   >
-                    <span className="font-medium">{opt}</span>
-                    {showCorrect && <Check className="h-5 w-5 shrink-0" />}
-                    {showWrong && <X className="h-5 w-5 shrink-0" />}
+                    <span className="text-sm sm:text-base font-medium leading-snug">{opt}</span>
+                    {showCorrect && <Check className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />}
+                    {showWrong && <X className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />}
                   </button>
                 );
               })}
