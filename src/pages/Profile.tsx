@@ -93,12 +93,12 @@ const Profile = () => {
     <div className="min-h-screen pb-20 md:pb-0">
       
 
-      <div className="container py-8 max-w-4xl">
+      <div className="container py-5 md:py-8 max-w-4xl">
         {/* Profile Header */}
         <Card className="gradient-card border-primary/20 shadow-card mb-6 animate-fade-in">
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row items-center gap-6">
-              <Avatar className="h-24 w-24 border-4 border-primary/30 shadow-glow">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
+              <Avatar className="h-[100px] w-[100px] border-4 border-primary/30 shadow-glow">
                 <AvatarImage src={profile.avatar_url || undefined} />
                 <AvatarFallback className="text-3xl font-extrabold gradient-bg text-primary-foreground">
                   {profile.display_name?.[0] ?? "?"}
@@ -106,7 +106,7 @@ const Profile = () => {
               </Avatar>
 
               <div className="flex-1 text-center md:text-right space-y-2">
-                <h1 className="text-3xl font-extrabold">{profile.display_name}</h1>
+                <h1 className="text-xl md:text-3xl font-extrabold">{profile.display_name}</h1>
                 <p className="text-muted-foreground" dir="ltr">@{profile.username}</p>
                 <div className="flex flex-wrap gap-2 justify-center md:justify-start">
                   <Badge variant="secondary">{ageGroupLabel[profile.age_group] ?? "شباب"}</Badge>
@@ -118,7 +118,7 @@ const Profile = () => {
             </div>
 
             {/* XP Progress */}
-            <div className="mt-6 space-y-2">
+            <div className="mt-4 md:mt-6 space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">المستوى التالي</span>
                 <span className="font-bold text-primary">
@@ -131,32 +131,32 @@ const Profile = () => {
         </Card>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 min-[431px]:grid-cols-3 md:grid-cols-4 gap-2.5 md:gap-4 mb-6">
           <Card className="gradient-card">
-            <CardContent className="p-4 text-center">
-              <Zap className="h-6 w-6 text-primary mx-auto mb-2" />
-              <p className="text-2xl font-extrabold">{profile.total_xp}</p>
+            <CardContent className="p-3 md:p-4 text-center">
+              <Zap className="h-5 w-5 md:h-6 md:w-6 text-primary mx-auto mb-1.5 md:mb-2" />
+              <p className="text-lg md:text-2xl font-extrabold">{profile.total_xp}</p>
               <p className="text-xs text-muted-foreground">نقاط XP</p>
             </CardContent>
           </Card>
           <Card className="gradient-card">
-            <CardContent className="p-4 text-center">
-              <Gamepad2 className="h-6 w-6 text-accent mx-auto mb-2" />
-              <p className="text-2xl font-extrabold">{profile.games_played}</p>
+            <CardContent className="p-3 md:p-4 text-center">
+              <Gamepad2 className="h-5 w-5 md:h-6 md:w-6 text-accent mx-auto mb-1.5 md:mb-2" />
+              <p className="text-lg md:text-2xl font-extrabold">{profile.games_played}</p>
               <p className="text-xs text-muted-foreground">لعبة</p>
             </CardContent>
           </Card>
           <Card className="gradient-card">
-            <CardContent className="p-4 text-center">
-              <Trophy className="h-6 w-6 text-success mx-auto mb-2" />
-              <p className="text-2xl font-extrabold">{winRate}%</p>
+            <CardContent className="p-3 md:p-4 text-center">
+              <Trophy className="h-5 w-5 md:h-6 md:w-6 text-success mx-auto mb-1.5 md:mb-2" />
+              <p className="text-lg md:text-2xl font-extrabold">{winRate}%</p>
               <p className="text-xs text-muted-foreground">نسبة الفوز</p>
             </CardContent>
           </Card>
           <Card className="gradient-card">
-            <CardContent className="p-4 text-center">
-              <Target className="h-6 w-6 text-warning mx-auto mb-2" />
-              <p className="text-2xl font-extrabold">{profile.total_score}</p>
+            <CardContent className="p-3 md:p-4 text-center">
+              <Target className="h-5 w-5 md:h-6 md:w-6 text-warning mx-auto mb-1.5 md:mb-2" />
+              <p className="text-lg md:text-2xl font-extrabold">{profile.total_score}</p>
               <p className="text-xs text-muted-foreground">النقاط الكلية</p>
             </CardContent>
           </Card>

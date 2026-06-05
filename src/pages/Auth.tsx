@@ -112,13 +112,13 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 gradient-hero">
-      <div className="w-full max-w-md space-y-6 animate-fade-in">
-        <Link to="/" className="flex flex-col items-center gap-3">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl gradient-bg shadow-elevated animate-pulse-glow">
+    <div className="min-h-screen flex items-center justify-center p-3 sm:p-4 gradient-hero">
+      <div className="w-full max-w-md space-y-4 sm:space-y-6 animate-fade-in">
+        <Link to="/" className="flex flex-col items-center gap-2 sm:gap-3">
+          <div className="flex h-[70px] w-[70px] sm:h-16 sm:w-16 items-center justify-center rounded-2xl gradient-bg shadow-elevated animate-pulse-glow">
             <Brain className="h-9 w-9 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-extrabold gradient-text">شغّل مخك</h1>
+          <h1 className="text-[34px] sm:text-3xl font-extrabold gradient-text">شغّل مخك</h1>
           <p className="text-sm text-muted-foreground">منصة الأسئلة والتحديات</p>
         </Link>
 
