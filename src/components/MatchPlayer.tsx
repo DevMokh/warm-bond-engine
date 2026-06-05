@@ -1029,24 +1029,24 @@ const MatchResults = ({
     const oppPct = totalQs > 0 ? Math.min(100, (oppProgress / totalQs) * 100) : 0;
 
     return (
-      <div className="py-6 text-center space-y-4">
-        <div className="text-5xl animate-pulse">⏳</div>
+      <div className="py-5 sm:py-6 text-center space-y-3 sm:space-y-4">
+        <div className="text-[52px] sm:text-5xl leading-none animate-pulse">⏳</div>
         <h2 className="text-xl font-extrabold">خلصت! في انتظار الخصم</h2>
 
-        <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 max-w-md mx-auto">
           <Card className="border-success/40 bg-success/5">
-            <CardContent className="p-4">
-              <Check className="h-5 w-5 text-success mx-auto mb-1" />
-              <div className="text-2xl font-extrabold">{myScore}</div>
+            <CardContent className="p-3 sm:p-4">
+              <Check className="h-4 w-4 sm:h-5 sm:w-5 text-success mx-auto mb-1" />
+              <div className="text-lg sm:text-2xl font-extrabold">{myScore}</div>
               <div className="text-[11px] text-muted-foreground">أنت — خلصت</div>
             </CardContent>
           </Card>
           <Card className={cn(oppFinished ? "border-success/40 bg-success/5" : "border-warning/40 bg-warning/5")}>
-            <CardContent className="p-4 space-y-1.5">
+            <CardContent className="p-3 sm:p-4 space-y-1.5">
               {oppFinished ? (
                 <>
-                  <Check className="h-5 w-5 text-success mx-auto mb-1" />
-                  <div className="text-2xl font-extrabold">{oppScore}</div>
+                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-success mx-auto mb-1" />
+                  <div className="text-lg sm:text-2xl font-extrabold">{oppScore}</div>
                   <div className="text-[11px] text-muted-foreground">الخصم — خلّص</div>
                 </>
               ) : (
@@ -1083,21 +1083,21 @@ const MatchResults = ({
     : undefined;
 
   return (
-    <div className="py-6 text-center space-y-4">
-      <div className="text-6xl">{emoji}</div>
-      <h2 className="text-2xl font-extrabold">{title}</h2>
-      <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
+    <div className="py-5 sm:py-6 text-center space-y-3 sm:space-y-4">
+      <div className="text-[52px] sm:text-6xl leading-none">{emoji}</div>
+      <h2 className="text-xl sm:text-2xl font-extrabold">{title}</h2>
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 max-w-md mx-auto">
         <Card className={cn(won && "border-success bg-success/5")}>
-          <CardContent className="p-4">
-            <Trophy className="h-5 w-5 text-primary mx-auto mb-1" />
-            <div className="text-2xl font-extrabold">{mine}</div>
+          <CardContent className="p-3 sm:p-4">
+            <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-primary mx-auto mb-1" />
+            <div className="text-lg sm:text-2xl font-extrabold">{mine}</div>
             <div className="text-[11px] text-muted-foreground">أنت</div>
           </CardContent>
         </Card>
         <Card className={cn(!won && !tie && "border-destructive bg-destructive/5")}>
-          <CardContent className="p-4">
-            <Swords className="h-5 w-5 text-muted-foreground mx-auto mb-1" />
-            <div className="text-2xl font-extrabold">{opp}</div>
+          <CardContent className="p-3 sm:p-4">
+            <Swords className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground mx-auto mb-1" />
+            <div className="text-lg sm:text-2xl font-extrabold">{opp}</div>
             <div className="text-[11px] text-muted-foreground">الخصم</div>
           </CardContent>
         </Card>
