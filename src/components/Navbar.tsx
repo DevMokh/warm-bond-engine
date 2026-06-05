@@ -98,7 +98,7 @@ export const Navbar = () => {
 
       {/* Mobile floating top bar: HUD + bell only (does not block bottom nav) */}
       {user && (
-        <div className="md:hidden fixed top-2 left-2 right-2 z-40 flex items-center justify-between pointer-events-none">
+        <div className="md:hidden fixed top-1.5 left-2 right-2 z-40 flex items-center justify-between pointer-events-none">
           <div className="pointer-events-auto"><PlayerHud compact /></div>
           <div className="pointer-events-auto"><NotificationsBell /></div>
         </div>
@@ -106,7 +106,7 @@ export const Navbar = () => {
 
       {/* Mobile bottom nav with sign out integrated */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass border-t border-border/50">
-        <div className="flex items-center justify-around py-2">
+        <div className="flex items-center justify-around py-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.to;
@@ -115,30 +115,30 @@ export const Navbar = () => {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs transition-smooth",
+                  "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-xs transition-smooth",
                   isActive ? "text-primary" : "text-muted-foreground",
                 )}
               >
-                <Icon className={cn("h-5 w-5", isActive && "scale-110")} />
-                <span className="text-[10px]">{item.label}</span>
+                <Icon className={cn("h-[18px] w-[18px]", isActive && "scale-110")} />
+                <span className="text-[9px] leading-none">{item.label}</span>
               </Link>
             );
           })}
           {user ? (
             <button
               onClick={handleSignOut}
-              className="flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs text-muted-foreground transition-smooth"
+              className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-xs text-muted-foreground transition-smooth"
             >
-              <LogOut className="h-5 w-5" />
-              <span className="text-[10px]">خروج</span>
+              <LogOut className="h-[18px] w-[18px]" />
+              <span className="text-[9px] leading-none">خروج</span>
             </button>
           ) : (
             <Link
               to="/auth"
-              className="flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs text-muted-foreground transition-smooth"
+              className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-xs text-muted-foreground transition-smooth"
             >
-              <User className="h-5 w-5" />
-              <span className="text-[10px]">دخول</span>
+              <User className="h-[18px] w-[18px]" />
+              <span className="text-[9px] leading-none">دخول</span>
             </Link>
           )}
         </div>

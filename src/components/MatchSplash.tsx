@@ -49,22 +49,22 @@ export const MatchSplash = ({ title = "جاري التحضير", subtitle, count
   return (
     <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background/95 backdrop-blur animate-in fade-in duration-300">
       {/* Brand burst */}
-      <div className="relative mb-8">
-        <div className="absolute inset-0 -m-6 rounded-full bg-primary/20 blur-2xl animate-pulse" />
-        <div className="relative h-24 w-24 rounded-3xl gradient-bg flex items-center justify-center shadow-2xl animate-in zoom-in-50 duration-500">
-          <Zap className="h-12 w-12 text-primary-foreground drop-shadow-lg" />
+      <div className="relative mb-6">
+        <div className="absolute inset-0 -m-5 rounded-full bg-primary/20 blur-2xl animate-pulse" />
+        <div className="relative h-[70px] w-[70px] rounded-2xl gradient-bg flex items-center justify-center shadow-2xl animate-in zoom-in-50 duration-500">
+          <Zap className="h-9 w-9 text-primary-foreground drop-shadow-lg" />
         </div>
       </div>
 
-      <h2 className="text-2xl font-extrabold gradient-text mb-1 animate-in slide-in-from-bottom-2 duration-500">{title}</h2>
-      {subtitle && <p className="text-sm text-muted-foreground mb-6 animate-in slide-in-from-bottom-2 duration-700">{subtitle}</p>}
+      <h2 className="text-xl sm:text-2xl font-extrabold gradient-text mb-1 animate-in slide-in-from-bottom-2 duration-500">{title}</h2>
+      {subtitle && <p className="text-xs sm:text-sm text-muted-foreground mb-5 animate-in slide-in-from-bottom-2 duration-700">{subtitle}</p>}
 
       {/* Countdown OR loader */}
       {count !== null ? (
         <div
           key={String(count)}
           className={cn(
-            "text-[120px] leading-none font-black animate-in zoom-in-50 duration-300",
+            "text-[88px] max-[379px]:text-[72px] leading-none font-black animate-in zoom-in-50 duration-300",
             count === "GO" ? "text-success" : "text-primary",
           )}
         >
