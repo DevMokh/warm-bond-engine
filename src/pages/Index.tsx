@@ -60,27 +60,27 @@ const Index = () => {
       
 
       {/* Hero */}
-      <section className="container py-12 md:py-20">
-        <div className="max-w-3xl mx-auto text-center space-y-6 animate-slide-up">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
+      <section className="container py-7 md:py-20">
+        <div className="max-w-3xl mx-auto text-center space-y-4 md:space-y-6 animate-slide-up">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-primary/10 border border-primary/20">
             <Sparkles className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium text-primary">منصة الأسئلة والتحديات #1</span>
           </div>
 
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold leading-tight">
+          <h1 className="text-[34px] md:text-6xl lg:text-7xl font-extrabold leading-tight">
             <span className="gradient-text">شغّل مخك</span>
             <br />
             <span className="text-foreground">واتحدى أصحابك</span>
           </h1>
 
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-sm md:text-xl text-muted-foreground max-w-2xl mx-auto">
             اختبر معلوماتك في مئات الفئات، اكسب نقاط XP، افتح إنجازات، والعب لايف مع أصحابك في غرف جماعية
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
+          <div className="flex flex-col sm:flex-row gap-2.5 md:gap-3 justify-center pt-2 md:pt-4">
             <Button
               size="lg"
-              className="text-base font-bold h-14 px-8 gradient-bg hover:opacity-90 shadow-elevated"
+              className="text-sm md:text-base font-bold h-12 md:h-14 px-6 md:px-8 gradient-bg hover:opacity-90 shadow-elevated"
               onClick={() => navigate(user ? "/play" : "/auth")}
             >
               <Gamepad2 className="h-5 w-5" />
@@ -90,7 +90,7 @@ const Index = () => {
               <Button
                 size="lg"
                 variant="outline"
-                className="text-base h-14 px-8"
+                className="text-sm md:text-base h-12 md:h-14 px-6 md:px-8"
                 onClick={() => navigate("/auth")}
               >
                 إنشاء حساب

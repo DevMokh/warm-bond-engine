@@ -340,19 +340,19 @@ const Play = () => {
   return (
     <div className="min-h-screen pb-20 md:pb-8">
       
-      <div className="container py-8 md:py-12">
+      <div className="container py-5 md:py-12">
         {/* Header */}
-        <div className="text-center mb-8 md:mb-12 space-y-3">
-          <h1 className="text-3xl md:text-5xl font-extrabold">
+        <div className="text-center mb-5 md:mb-12 space-y-2 md:space-y-3">
+          <h1 className="text-xl md:text-5xl font-extrabold">
             اختار <span className="gradient-text">الفئة</span>
           </h1>
-          <p className="text-muted-foreground text-sm md:text-lg max-w-2xl mx-auto">
+          <p className="text-muted-foreground text-xs md:text-lg max-w-2xl mx-auto">
             12 فئة معرفية - وكل فئة فيها 4 تخصصات فرعية. اختار اللي يحمسك دلوقتي
           </p>
         </div>
 
         {/* Categories grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 md:gap-5">
           {categories.map((cat) => {
             const Icon = cat.icon;
             return (
@@ -364,10 +364,10 @@ const Play = () => {
                 <Card
                   className={`relative overflow-hidden border-primary/10 bg-gradient-to-br ${cat.gradient} backdrop-blur-sm transition-bounce hover:border-primary/40 hover:shadow-elevated hover:-translate-y-1 h-full`}
                 >
-                  <CardContent className="p-5 md:p-6 space-y-4">
+                  <CardContent className="p-[13px] md:p-6 space-y-2.5 md:space-y-4">
                     <div className="flex items-start justify-between">
-                      <div className="inline-flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-2xl bg-primary/15 ring-1 ring-primary/20 group-hover:scale-110 group-hover:bg-primary/25 transition-bounce">
-                        <Icon className="h-6 w-6 md:h-7 md:w-7 text-primary" />
+                      <div className="inline-flex h-10 w-10 md:h-14 md:w-14 items-center justify-center rounded-xl md:rounded-2xl bg-primary/15 ring-1 ring-primary/20 group-hover:scale-110 group-hover:bg-primary/25 transition-bounce">
+                        <Icon className="h-5 w-5 md:h-7 md:w-7 text-primary" />
                       </div>
                       {cat.badge && (
                         <Badge variant={cat.badgeVariant ?? "secondary"} className="text-[10px] md:text-xs">
@@ -376,7 +376,7 @@ const Play = () => {
                       )}
                     </div>
                     <div className="space-y-1.5">
-                      <h3 className="text-lg md:text-xl font-extrabold leading-tight">
+                      <h3 className="text-base md:text-xl font-extrabold leading-tight">
                         {cat.title}
                       </h3>
                       <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
@@ -397,7 +397,7 @@ const Play = () => {
         </div>
 
         {/* Footer hint */}
-        <div className="mt-10 text-center">
+        <div className="mt-6 md:mt-10 text-center">
           <p className="text-xs md:text-sm text-muted-foreground">
             🎯 اضغط على فئة عشان تشوف الـ 4 تخصصات الفرعية بتاعتها
           </p>
@@ -406,16 +406,16 @@ const Play = () => {
 
       {/* Branches dialog */}
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl p-[18px] sm:p-6">
           {selected && (
             <>
               <DialogHeader className="text-right">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 ring-1 ring-primary/20">
-                    <selected.icon className="h-6 w-6 text-primary" />
+                <div className="flex items-center gap-3 mb-1 sm:mb-2">
+                  <div className="inline-flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl sm:rounded-2xl bg-primary/15 ring-1 ring-primary/20">
+                    <selected.icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                   </div>
                   <div>
-                    <DialogTitle className="text-2xl font-extrabold">
+                    <DialogTitle className="text-xl sm:text-2xl font-extrabold">
                       {selected.title}
                     </DialogTitle>
                     <DialogDescription className="text-sm">
@@ -425,7 +425,7 @@ const Play = () => {
                 </div>
               </DialogHeader>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 mt-3 sm:mt-4">
                 {selected.branches.map((branch, idx) => (
                   <button
                     key={branch.id}
@@ -435,14 +435,14 @@ const Play = () => {
                     <Card
                       className={`border-primary/10 bg-gradient-to-br ${selected.gradient} backdrop-blur-sm transition-bounce hover:border-primary/40 hover:shadow-elevated hover:-translate-y-0.5 h-full`}
                     >
-                      <CardContent className="p-4 space-y-2">
+                      <CardContent className="p-3 sm:p-4 space-y-1.5 sm:space-y-2">
                         <div className="flex items-center justify-between">
                           <Badge variant="outline" className="text-[10px]">
                             فرع {idx + 1}
                           </Badge>
                           <ChevronLeft className="h-4 w-4 text-primary/70 group-hover:-translate-x-1 transition-transform" />
                         </div>
-                        <h4 className="text-base md:text-lg font-bold">
+                        <h4 className="text-sm md:text-lg font-bold">
                           {branch.title}
                         </h4>
                         <p className="text-xs text-muted-foreground">
@@ -460,16 +460,16 @@ const Play = () => {
 
       {/* Play modes dialog */}
       <Dialog open={!!selectedBranch} onOpenChange={(open) => !open && setSelectedBranch(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-[18px] sm:p-6">
           {selected && selectedBranch && (
             <>
               <DialogHeader className="text-right">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 ring-1 ring-primary/20">
-                    <selected.icon className="h-6 w-6 text-primary" />
+                <div className="flex items-center gap-3 mb-1 sm:mb-2">
+                  <div className="inline-flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl sm:rounded-2xl bg-primary/15 ring-1 ring-primary/20">
+                    <selected.icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                   </div>
                   <div className="flex-1">
-                    <DialogTitle className="text-xl md:text-2xl font-extrabold">
+                    <DialogTitle className="text-lg md:text-2xl font-extrabold">
                       {selected.title} <span className="text-primary">·</span> {selectedBranch.title}
                     </DialogTitle>
                     <DialogDescription className="text-sm">
@@ -479,18 +479,18 @@ const Play = () => {
                 </div>
               </DialogHeader>
 
-              <div className="space-y-6 mt-4">
+              <div className="space-y-4 sm:space-y-6 mt-3 sm:mt-4">
                 {modeGroups.map((group) => (
-                  <div key={group.id} className="space-y-3">
+                  <div key={group.id} className="space-y-2 sm:space-y-3">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-extrabold">{group.label}</h3>
+                      <h3 className="text-base sm:text-lg font-extrabold">{group.label}</h3>
                       <Badge variant={group.badgeVariant} className="text-[10px]">
                         {group.badge}
                       </Badge>
                       <div className="flex-1 h-px bg-border/50" />
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-2.5">
                       {group.modes.map((mode) => {
                         const ModeIcon = mode.icon;
                         return (
@@ -502,9 +502,9 @@ const Play = () => {
                             <Card
                               className={`border-primary/10 bg-gradient-to-br ${selected.gradient} backdrop-blur-sm transition-bounce hover:border-primary/40 hover:shadow-elevated hover:-translate-y-0.5 h-full`}
                             >
-                              <CardContent className="p-3 space-y-2">
-                                <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 ring-1 ring-primary/20 group-hover:scale-110 transition-bounce">
-                                  <ModeIcon className="h-4 w-4 text-primary" />
+                              <CardContent className="p-2.5 sm:p-3 space-y-1.5 sm:space-y-2">
+                                <div className="inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg sm:rounded-xl bg-primary/15 ring-1 ring-primary/20 group-hover:scale-110 transition-bounce">
+                                  <ModeIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
                                 </div>
                                 <div className="space-y-0.5">
                                   <h4 className="text-sm font-bold leading-tight">

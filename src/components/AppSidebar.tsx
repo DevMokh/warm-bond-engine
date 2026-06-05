@@ -78,12 +78,12 @@ export const AppSidebar = () => {
             <NavLink
               to={item.to}
               className={cn(
-                "flex items-center gap-2 hover:bg-muted/50",
+                "flex items-center gap-2 py-2 hover:bg-muted/50",
                 active && "bg-primary/10 text-primary font-semibold"
               )}
             >
-              <Icon className="h-5 w-5 shrink-0" />
-              <span className="text-base">{item.label}</span>
+              <Icon className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+              <span className="text-sm sm:text-base">{item.label}</span>
             </NavLink>
           </SidebarMenuButton>
         </SidebarMenuItem>
@@ -93,11 +93,11 @@ export const AppSidebar = () => {
   return (
     <Sidebar collapsible="offcanvas" side="right">
       <SidebarHeader className="border-b border-border/50">
-        <div className="flex items-center gap-2 px-2 py-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-bg shrink-0">
-            <Brain className="h-5 w-5 text-primary-foreground" />
+        <div className="flex items-center gap-2 px-2 py-2 sm:py-3">
+          <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg sm:rounded-xl gradient-bg shrink-0">
+            <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
           </div>
-          <span className="text-lg font-extrabold gradient-text">شغّل مخك</span>
+          <span className="text-base sm:text-lg font-extrabold gradient-text">شغّل مخك</span>
         </div>
       </SidebarHeader>
 
