@@ -750,7 +750,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
             </Button>
           )}
         </div>
-        <div className="h-full w-full overflow-y-auto overscroll-contain p-4 sm:p-6 pt-12 sm:pt-14">
+        <div className="h-full w-full overflow-y-auto overscroll-contain p-3 sm:p-6 pt-11 sm:pt-14">
         {rtError && (
           <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs">
             <span className="text-destructive font-bold">⚠ {rtError}</span>
@@ -791,9 +791,9 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
             rematchEvents={rematchEvents}
           />
         ) : current ? (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 <Badge className="gap-1"><Swords className="h-3 w-3" /> 1v1</Badge>
                 {match && (match.best_of ?? 1) > 1 && (
                   <Badge variant="default" className="gap-1">
@@ -803,13 +803,13 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
                 {match?.difficulty && <Badge variant="outline">{match.difficulty}</Badge>}
                 <Badge variant="secondary">سؤال {index + 1} من {total}</Badge>
               </div>
-              <button onClick={tryClose} className="text-muted-foreground hover:text-foreground">
+              <button onClick={tryClose} className="text-muted-foreground hover:text-foreground" aria-label="إغلاق">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between text-xs sm:text-sm">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <span className="font-bold">{index + 1} / {total}</span>
                 <span className="text-primary font-bold">⭐ {score}</span>
                 {streak >= 2 && (
@@ -831,7 +831,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
             <Progress value={(timeLeft / TIMER) * 100} className={cn("h-1", timeLeft <= 3 && "[&>div]:bg-destructive")} />
 
             {/* Opponent live progress */}
-            <div className="rounded-lg border border-border bg-muted/30 p-2.5 space-y-1.5">
+            <div className="rounded-lg border border-border bg-muted/30 p-2 sm:p-2.5 space-y-1.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="flex items-center gap-1 font-bold text-muted-foreground">
                   <Activity className="h-3 w-3" /> تقدم الخصم
@@ -844,13 +844,13 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
             </div>
 
             <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-              <CardContent className="p-5 md:p-6">
-                <h2 className="text-lg md:text-xl font-bold leading-relaxed">{current.question}</h2>
+              <CardContent className="p-[11px] sm:p-5 md:p-6">
+                <h2 className="text-base md:text-xl font-bold leading-relaxed">{current.question}</h2>
               </CardContent>
             </Card>
 
             {/* Power-ups bar */}
-            <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/20 p-2">
+            <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/20 p-1.5 sm:p-2">
               <span className="text-[11px] font-bold text-muted-foreground px-1">⚡ Power-ups</span>
               <div className="flex gap-1.5">
                 <Button size="sm" variant="outline" disabled={pu5050Used || revealed} onClick={use5050}
@@ -870,7 +870,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-2.5">
+            <div className="grid grid-cols-1 gap-2 sm:gap-2.5">
               {current.options.map((opt, i) => {
                 const isCorrect = i === current.correct_answer;
                 const isSelected = selected === i;
@@ -879,8 +879,8 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
                 const isHidden = hiddenOpts.includes(i);
                 if (isHidden) {
                   return (
-                    <div key={i} className="text-right p-4 rounded-xl border-2 border-dashed border-border bg-muted/30 opacity-40 line-through">
-                      <span className="font-medium">{opt}</span>
+                    <div key={i} className="text-right p-[11px] sm:p-4 rounded-lg sm:rounded-xl border-2 border-dashed border-border bg-muted/30 opacity-40 line-through">
+                      <span className="text-sm sm:text-base font-medium leading-snug">{opt}</span>
                     </div>
                   );
                 }
@@ -890,7 +890,7 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
                     onClick={() => handleAnswer(i)}
                     disabled={revealed}
                     className={cn(
-                      "text-right p-4 rounded-xl border-2 transition-all flex items-center justify-between gap-3",
+                      "text-right p-[11px] sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all flex items-center justify-between gap-2.5 sm:gap-3",
                       "hover:border-primary/50 hover:bg-primary/5",
                       !revealed && "border-border bg-card",
                       showCorrect && "border-success bg-success/10 text-success",
@@ -898,9 +898,9 @@ export const MatchPlayer = ({ open, matchId, onClose, onFinished }: Props) => {
                       revealed && !isCorrect && !isSelected && "opacity-50",
                     )}
                   >
-                    <span className="font-medium">{opt}</span>
-                    {showCorrect && <Check className="h-5 w-5 shrink-0" />}
-                    {showWrong && <X className="h-5 w-5 shrink-0" />}
+                    <span className="text-sm sm:text-base font-medium leading-snug">{opt}</span>
+                    {showCorrect && <Check className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />}
+                    {showWrong && <X className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />}
                   </button>
                 );
               })}
