@@ -253,7 +253,11 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent ref={fsRef} className="max-w-2xl max-h-[92vh] overflow-y-auto data-[fs=true]:max-w-none data-[fs=true]:max-h-none data-[fs=true]:h-screen data-[fs=true]:w-screen data-[fs=true]:rounded-none" data-fs={isFullscreen || undefined}>
+      <DialogContent
+        ref={fsRef}
+        className="!fixed !inset-0 !left-0 !top-0 !translate-x-0 !translate-y-0 w-screen h-[100dvh] max-w-none overflow-y-auto rounded-none border-0 p-3 pt-11 gap-0 sm:!inset-auto sm:!left-[50%] sm:!top-[50%] sm:!translate-x-[-50%] sm:!translate-y-[-50%] sm:h-auto sm:max-h-[92vh] sm:max-w-2xl sm:rounded-lg sm:border sm:p-6 data-[fs=true]:max-w-none data-[fs=true]:max-h-none data-[fs=true]:h-[100dvh] data-[fs=true]:w-screen data-[fs=true]:rounded-none"
+        data-fs={isFullscreen || undefined}
+      >
         {/* Pre-match splash */}
         {open && !splashDone && pool.length > 0 && !finished && (
           <MatchSplash
@@ -267,21 +271,21 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
         {/* Floating controls + HUD */}
         {!loading && pool.length > 0 && !finished && (
           <>
-            <div className="absolute top-3 left-3 z-20 flex gap-1">
-              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setMuted(!muted)} title={muted ? "تشغيل الصوت" : "كتم الصوت"} aria-label="صوت">
+            <div className="absolute top-2 left-2 z-20 flex gap-1 sm:top-3 sm:left-3">
+              <Button size="icon" variant="ghost" className="h-7 w-7 sm:h-8 sm:w-8" onClick={() => setMuted(!muted)} title={muted ? "تشغيل الصوت" : "كتم الصوت"} aria-label="صوت">
                 {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
               </Button>
-              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={toggleFs} title="ملء الشاشة" aria-label="ملء الشاشة">
+              <Button size="icon" variant="ghost" className="h-7 w-7 sm:h-8 sm:w-8" onClick={toggleFs} title="ملء الشاشة" aria-label="ملء الشاشة">
                 {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
               </Button>
             </div>
-            <div className="absolute top-3 right-12 z-20"><PlayerHud compact /></div>
+            <div className="absolute top-2 right-10 z-20 sm:top-3 sm:right-12"><PlayerHud compact /></div>
           </>
         )}
         {loading ? (
-          <div className="py-16 flex flex-col items-center gap-3">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">جاري تحميل الأسئلة...</p>
+          <div className="py-12 sm:py-16 flex flex-col items-center gap-3">
+            <Loader2 className="h-7 w-7 sm:h-8 sm:w-8 animate-spin text-primary" />
+            <p className="text-xs sm:text-sm text-muted-foreground">جاري تحميل الأسئلة...</p>
           </div>
         ) : pool.length === 0 ? (
           <div className="py-12 text-center space-y-4">
