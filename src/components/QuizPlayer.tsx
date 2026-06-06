@@ -309,7 +309,7 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
             onClose={onClose}
           />
         ) : current ? (
-          <div className="space-y-3 sm:space-y-4">
+          <div className="flex flex-col min-h-[calc(100dvh-1rem)] sm:min-h-0 sm:space-y-4">
             {/* Header: category pills + close */}
             <div className="flex items-center justify-between gap-2">
               <button onClick={handleClose} className="text-muted-foreground hover:text-foreground p-1 -m-1" aria-label="إغلاق">
