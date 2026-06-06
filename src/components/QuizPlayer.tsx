@@ -309,7 +309,7 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
             onClose={onClose}
           />
         ) : current ? (
-          <div className="space-y-3 sm:space-y-4">
+          <div className="flex flex-col min-h-[calc(100dvh-1rem)] sm:min-h-0 sm:space-y-4">
             {/* Header: category pills + close */}
             <div className="flex items-center justify-between gap-2">
               <button onClick={handleClose} className="text-muted-foreground hover:text-foreground p-1 -m-1" aria-label="إغلاق">
@@ -362,45 +362,47 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
 
             <Progress value={progressPct} className="h-1.5" />
 
-            {/* Question */}
-            <Card className="bg-gradient-to-br from-warning/10 to-warning/5 border-warning/30 border-2">
-              <CardContent className="p-[11px] sm:p-5 md:p-6">
-                <div className="flex items-center justify-end mb-2 sm:mb-3">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-warning/20 text-warning">
-                    {current.difficulty === "easy" ? "سهل" : current.difficulty === "hard" ? "صعب" : "متوسط"}
-                  </span>
-                </div>
-                <h2 className="text-base md:text-xl font-bold leading-relaxed text-right">{current.question}</h2>
-              </CardContent>
-            </Card>
+            {/* Centered question + options */}
+            <div className="flex-1 flex flex-col justify-center gap-3 sm:gap-4 py-4 sm:py-0">
+              <Card className="bg-gradient-to-br from-warning/10 to-warning/5 border-warning/30 border-2">
+                <CardContent className="p-3 sm:p-5 md:p-6">
+                  <div className="flex items-center justify-end mb-2">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-warning/20 text-warning">
+                      {current.difficulty === "easy" ? "سهل" : current.difficulty === "hard" ? "صعب" : "متوسط"}
+                    </span>
+                  </div>
+                  <h2 className="text-[15px] md:text-lg font-bold leading-relaxed text-center">{current.question}</h2>
+                </CardContent>
+              </Card>
 
-            {/* Options */}
-            <div className="grid grid-cols-1 gap-2 sm:gap-2.5">
-              {current.options.map((opt, i) => {
-                const isCorrect = i === current.correct_answer;
-                const isSelected = selected === i;
-                const showCorrect = revealed && isCorrect;
-                const showWrong = revealed && isSelected && !isCorrect;
-                return (
-                  <button
-                    key={i}
-                    onClick={() => handleAnswer(i)}
-                    disabled={revealed}
-                    className={cn(
-                      "text-right p-[11px] sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all flex items-center justify-between gap-2.5 sm:gap-3",
-                      "hover:border-primary/50 hover:bg-primary/5",
-                      !revealed && "border-border bg-card",
-                      showCorrect && "border-success bg-success/10 text-success",
-                      showWrong && "border-destructive bg-destructive/10 text-destructive",
-                      revealed && !isCorrect && !isSelected && "opacity-50",
-                    )}
-                  >
-                    <span className="text-sm sm:text-base font-medium leading-snug">{opt}</span>
-                    {showCorrect && <Check className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />}
-                    {showWrong && <X className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />}
-                  </button>
-                );
-              })}
+              {/* Options */}
+              <div className="grid grid-cols-1 gap-2 sm:gap-2.5">
+                {current.options.map((opt, i) => {
+                  const isCorrect = i === current.correct_answer;
+                  const isSelected = selected === i;
+                  const showCorrect = revealed && isCorrect;
+                  const showWrong = revealed && isSelected && !isCorrect;
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => handleAnswer(i)}
+                      disabled={revealed}
+                      className={cn(
+                        "text-center p-2.5 sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all flex items-center justify-center gap-2.5 sm:gap-3",
+                        "hover:border-primary/50 hover:bg-primary/5",
+                        !revealed && "border-border bg-card",
+                        showCorrect && "border-success bg-success/10 text-success",
+                        showWrong && "border-destructive bg-destructive/10 text-destructive",
+                        revealed && !isCorrect && !isSelected && "opacity-50",
+                      )}
+                    >
+                      <span className="text-[13px] sm:text-base font-medium leading-snug">{opt}</span>
+                      {showCorrect && <Check className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />}
+                      {showWrong && <X className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Explanation + next */}
