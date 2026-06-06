@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,28 +23,30 @@ export const MatchSplash = ({ title = "جاري التحضير", subtitle, count
   const [count, setCount] = useState<number | "GO" | null>(countdown ? 3 : null);
   const [shownAt] = useState(() => Date.now());
 
+  const onReadyRef = useRef(onReady);
+  useEffect(() => { onReadyRef.current = onReady; }, [onReady]);
+
   useEffect(() => {
     if (!countdown || !loaded) return;
-    // Wait until loaded then run countdown
     let t: ReturnType<typeof setTimeout>;
     const tick = (n: number | "GO") => {
       setCount(n);
       if (n === "GO") {
-        t = setTimeout(() => onReady?.(), 600);
+        t = setTimeout(() => onReadyRef.current?.(), 600);
       } else if (typeof n === "number") {
         t = setTimeout(() => tick(n === 1 ? "GO" : n - 1), 700);
       }
     };
     tick(3);
     return () => clearTimeout(t);
-  }, [countdown, loaded, onReady]);
+  }, [countdown, loaded]);
 
   useEffect(() => {
-    if (countdown || !loaded || !onReady) return;
+    if (countdown || !loaded) return;
     const remaining = Math.max(0, minMs - (Date.now() - shownAt));
-    const t = setTimeout(() => onReady(), remaining);
+    const t = setTimeout(() => onReadyRef.current?.(), remaining);
     return () => clearTimeout(t);
-  }, [countdown, loaded, onReady, minMs, shownAt]);
+  }, [countdown, loaded, minMs, shownAt]);
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background/95 backdrop-blur animate-in fade-in duration-300">
