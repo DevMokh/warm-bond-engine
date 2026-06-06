@@ -45,11 +45,12 @@ export function useProfileStats() {
   // Realtime updates on this profile
   useEffect(() => {
     if (!user) return;
-    const ch = supabase
-      .channel(`profile-stats-${user.id}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles", filter: `user_id=eq.${user.id}` },
-        (p) => setStats(p.new as ProfileStats))
-      .subscribe();
+    const ch = supabase.channel(`profile-stats-${user.id}-${Math.random().toString(36).slice(2)}`);
+    ch.on(
+      "postgres_changes",
+      { event: "UPDATE", schema: "public", table: "profiles", filter: `user_id=eq.${user.id}` },
+      (p) => setStats(p.new as ProfileStats),
+    ).subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [user]);
 
