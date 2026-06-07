@@ -635,13 +635,13 @@ const Admin = () => {
                             className="flex-1 min-w-0 text-right hover:opacity-80"
                           >
                             <p className="font-medium mb-1.5 line-clamp-2">
-                              <Highlight text={q.question} term={search} />
+                              <HighlightText text={q.question} term={search} />
                             </p>
                             <div className="flex flex-wrap gap-1.5 text-xs">
                               {cat && <Badge variant="secondary">{cat.name_ar}</Badge>}
                               <Badge variant="outline">{difficultyLabel(q.difficulty)}</Badge>
                               <Badge variant="outline" className="text-success border-success/40">
-                                ✓ <Highlight text={q.options[q.correct_answer] || ""} term={search} />
+                                ✓ <HighlightText text={q.options[q.correct_answer] || ""} term={search} />
                               </Badge>
                               {(q.times_played ?? 0) > 0 && (
                                 <Badge variant="outline" className="text-muted-foreground">
