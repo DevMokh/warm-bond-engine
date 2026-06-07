@@ -854,4 +854,23 @@ function parseCSVLine(line: string): string[] {
   return result;
 }
 
+const HighlightText = ({ text, term }: { text: string; term: string }) => {
+  const t = term.trim();
+  if (!t) return <>{text}</>;
+  const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const parts = text.split(new RegExp(`(${escaped})`, "gi"));
+  return (
+    <>
+      {parts.map((p, i) =>
+        p.toLowerCase() === t.toLowerCase() ? (
+          <mark key={i} className="bg-warning/30 text-foreground rounded px-0.5">{p}</mark>
+        ) : (
+          <span key={i}>{p}</span>
+        )
+      )}
+    </>
+  );
+};
+
 export default Admin;
+
