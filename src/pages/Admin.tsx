@@ -567,6 +567,33 @@ const Admin = () => {
                   </Select>
                 </div>
 
+                {/* Sort + page size + export */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger><SelectValue placeholder="ترتيب" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest">الأحدث</SelectItem>
+                      <SelectItem value="oldest">الأقدم</SelectItem>
+                      <SelectItem value="plays_desc">الأكثر محاولات</SelectItem>
+                      <SelectItem value="plays_asc">الأقل محاولات</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={String(pageSize)} onValueChange={(v) => setPageSize(parseInt(v))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10 / صفحة</SelectItem>
+                      <SelectItem value="20">20 / صفحة</SelectItem>
+                      <SelectItem value="50">50 / صفحة</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" size="sm" onClick={() => exportFiltered("csv")}>
+                    <Download className="h-4 w-4 ml-1" /> تصدير CSV
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => exportFiltered("json")}>
+                    <Download className="h-4 w-4 ml-1" /> تصدير JSON
+                  </Button>
+                </div>
+
                 {/* Result count + clear */}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">
@@ -594,7 +621,7 @@ const Admin = () => {
                   <p className="text-center text-muted-foreground py-8">مفيش نتائج</p>
                 ) : (
                   <div className="space-y-2">
-                    {filtered.map((q) => {
+                    {pageItems.map((q) => {
                       const cat = categories.find((c) => c.id === q.category_id);
                       return (
                         <div
@@ -607,15 +634,23 @@ const Admin = () => {
                             onClick={() => openEdit(q)}
                             className="flex-1 min-w-0 text-right hover:opacity-80"
                           >
-                            <p className="font-medium mb-1.5 line-clamp-2">{q.question}</p>
+                            <p className="font-medium mb-1.5 line-clamp-2">
+                              <Highlight text={q.question} term={search} />
+                            </p>
                             <div className="flex flex-wrap gap-1.5 text-xs">
                               {cat && <Badge variant="secondary">{cat.name_ar}</Badge>}
                               <Badge variant="outline">{difficultyLabel(q.difficulty)}</Badge>
                               <Badge variant="outline" className="text-success border-success/40">
-                                ✓ {q.options[q.correct_answer]}
+                                ✓ <Highlight text={q.options[q.correct_answer] || ""} term={search} />
                               </Badge>
+                              {(q.times_played ?? 0) > 0 && (
+                                <Badge variant="outline" className="text-muted-foreground">
+                                  محاولات: {q.times_played}
+                                </Badge>
+                              )}
                             </div>
                           </button>
+
                           <div className="flex flex-col items-center gap-2">
                             <Switch checked={q.is_active} onCheckedChange={() => toggleActive(q)} />
                             <Button size="icon" variant="ghost" onClick={() => openEdit(q)}>
