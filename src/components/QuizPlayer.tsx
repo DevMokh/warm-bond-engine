@@ -268,20 +268,11 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
             onReady={() => setSplashDone(true)}
           />
         )}
-        {/* Floating controls + HUD */}
+        {/* Floating HUD */}
         {!loading && pool.length > 0 && !finished && (
-          <>
-            <div className="absolute top-2 left-2 z-20 flex gap-1 sm:top-3 sm:left-3">
-              <Button size="icon" variant="ghost" className="h-7 w-7 sm:h-8 sm:w-8" onClick={() => setMuted(!muted)} title={muted ? "تشغيل الصوت" : "كتم الصوت"} aria-label="صوت">
-                {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-              </Button>
-              <Button size="icon" variant="ghost" className="h-7 w-7 sm:h-8 sm:w-8" onClick={toggleFs} title="ملء الشاشة" aria-label="ملء الشاشة">
-                {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-              </Button>
-            </div>
-            <div className="absolute top-2 right-10 z-20 sm:top-3 sm:right-12"><PlayerHud compact /></div>
-          </>
+          <div className="absolute top-2 right-10 z-20 sm:top-3 sm:right-12"><PlayerHud compact /></div>
         )}
+
         {loading ? (
           <div className="py-12 sm:py-16 flex flex-col items-center gap-3">
             <Loader2 className="h-7 w-7 sm:h-8 sm:w-8 animate-spin text-primary" />
