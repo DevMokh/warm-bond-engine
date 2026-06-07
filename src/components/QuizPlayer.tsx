@@ -363,20 +363,36 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
             <Progress value={progressPct} className="h-1.5" />
 
             {/* Centered question + options */}
-            <div className="flex-1 flex flex-col justify-center gap-3 sm:gap-4 py-4 sm:py-0">
+            <div
+              className="flex-1 flex flex-col justify-center items-stretch mx-auto w-full"
+              style={{
+                gap: "clamp(0.625rem, 2.5vw, 1rem)",
+                paddingTop: "clamp(0.5rem, 2vw, 1rem)",
+                paddingBottom: "clamp(0.5rem, 2vw, 1rem)",
+                maxWidth: "min(100%, 640px)",
+              }}
+            >
               <Card className="bg-gradient-to-br from-warning/10 to-warning/5 border-warning/30 border-2">
-                <CardContent className="p-3 sm:p-5 md:p-6">
+                <CardContent style={{ padding: "clamp(0.75rem, 3.5vw, 1.5rem)" }}>
                   <div className="flex items-center justify-end mb-2">
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-warning/20 text-warning">
                       {current.difficulty === "easy" ? "سهل" : current.difficulty === "hard" ? "صعب" : "متوسط"}
                     </span>
                   </div>
-                  <h2 className="text-[15px] md:text-lg font-bold leading-relaxed text-center">{current.question}</h2>
+                  <h2
+                    className="font-bold leading-relaxed text-center"
+                    style={{ fontSize: "clamp(0.9375rem, 3.8vw, 1.25rem)" }}
+                  >
+                    {current.question}
+                  </h2>
                 </CardContent>
               </Card>
 
               {/* Options */}
-              <div className="grid grid-cols-1 gap-2 sm:gap-2.5">
+              <div
+                className="grid grid-cols-1"
+                style={{ gap: "clamp(0.5rem, 1.8vw, 0.625rem)" }}
+              >
                 {current.options.map((opt, i) => {
                   const isCorrect = i === current.correct_answer;
                   const isSelected = selected === i;
@@ -387,8 +403,13 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
                       key={i}
                       onClick={() => handleAnswer(i)}
                       disabled={revealed}
+                      style={{
+                        padding: "clamp(0.625rem, 2.6vw, 1rem)",
+                        borderRadius: "clamp(0.5rem, 2vw, 0.75rem)",
+                        fontSize: "clamp(0.8125rem, 3.4vw, 1rem)",
+                      }}
                       className={cn(
-                        "text-center p-2.5 sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all flex items-center justify-center gap-2.5 sm:gap-3",
+                        "text-center border-2 transition-all flex items-center justify-center gap-2.5 sm:gap-3",
                         "hover:border-primary/50 hover:bg-primary/5",
                         !revealed && "border-border bg-card",
                         showCorrect && "border-success bg-success/10 text-success",
@@ -396,7 +417,7 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
                         revealed && !isCorrect && !isSelected && "opacity-50",
                       )}
                     >
-                      <span className="text-[13px] sm:text-base font-medium leading-snug">{opt}</span>
+                      <span className="font-medium leading-snug">{opt}</span>
                       {showCorrect && <Check className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />}
                       {showWrong && <X className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />}
                     </button>
