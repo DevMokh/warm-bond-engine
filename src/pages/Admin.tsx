@@ -465,11 +465,11 @@ const Admin = () => {
               </CardHeader>
               <CardContent className="space-y-3">
                 {/* Filters */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                  <div className="relative">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+                  <div className="relative md:col-span-2">
                     <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder="ابحث في الأسئلة..."
+                      placeholder="ابحث في السؤال أو الخيارات..."
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       className="pr-9"
@@ -493,6 +493,35 @@ const Admin = () => {
                       <SelectItem value="hard">صعب</SelectItem>
                     </SelectContent>
                   </Select>
+                  <Select value={filterActive} onValueChange={setFilterActive}>
+                    <SelectTrigger><SelectValue placeholder="الحالة" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">كل الحالات</SelectItem>
+                      <SelectItem value="active">نشط</SelectItem>
+                      <SelectItem value="inactive">معطّل</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Result count + clear */}
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    النتائج: <span className="font-bold text-foreground">{filtered.length}</span> سؤال
+                  </span>
+                  {(search || filterCat !== "all" || filterDiff !== "all" || filterActive !== "all") && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSearch("");
+                        setFilterCat("all");
+                        setFilterDiff("all");
+                        setFilterActive("all");
+                      }}
+                    >
+                      مسح الفلاتر
+                    </Button>
+                  )}
                 </div>
 
                 {loadingData ? (
