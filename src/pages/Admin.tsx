@@ -30,7 +30,11 @@ type Question = {
   category_id: string | null;
   is_active: boolean;
   explanation: string | null;
+  created_at?: string;
+  times_played?: number;
+  times_correct?: number;
 };
+
 
 const emptyForm = {
   question: "",
@@ -64,6 +68,10 @@ const Admin = () => {
   const [filterCat, setFilterCat] = useState<string>("all");
   const [filterDiff, setFilterDiff] = useState<string>("all");
   const [filterActive, setFilterActive] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("newest");
+  const [pageSize, setPageSize] = useState<number>(20);
+  const [page, setPage] = useState<number>(1);
+
 
   // Edit dialog
   const [editing, setEditing] = useState<Question | null>(null);
@@ -276,7 +284,7 @@ const Admin = () => {
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
-    return questions.filter((q) => {
+    const out = questions.filter((q) => {
       if (filterCat !== "all" && q.category_id !== filterCat) return false;
       if (filterDiff !== "all" && q.difficulty !== filterDiff) return false;
       if (filterActive !== "all") {
@@ -295,7 +303,63 @@ const Admin = () => {
       }
       return true;
     });
-  }, [questions, search, filterCat, filterDiff, filterActive]);
+    out.sort((a, b) => {
+      if (sortBy === "oldest") return (a.created_at || "").localeCompare(b.created_at || "");
+      if (sortBy === "plays_desc") return (b.times_played || 0) - (a.times_played || 0);
+      if (sortBy === "plays_asc") return (a.times_played || 0) - (b.times_played || 0);
+      return (b.created_at || "").localeCompare(a.created_at || ""); // newest
+    });
+    return out;
+  }, [questions, search, filterCat, filterDiff, filterActive, sortBy]);
+
+  // Reset to page 1 when filters/sort change
+  useEffect(() => { setPage(1); }, [search, filterCat, filterDiff, filterActive, sortBy, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const pageItems = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page, pageSize]);
+
+  const exportFiltered = (kind: "csv" | "json") => {
+    if (filtered.length === 0) { toast.error("مفيش نتائج للتصدير"); return; }
+    const catMap = new Map(categories.map((c) => [c.id, c.slug] as const));
+    const rows = filtered.map((q) => ({
+      id: q.id,
+      question: q.question,
+      option1: q.options[0] || "",
+      option2: q.options[1] || "",
+      option3: q.options[2] || "",
+      option4: q.options[3] || "",
+      correct_answer: q.correct_answer,
+      difficulty: q.difficulty,
+      category_slug: q.category_id ? catMap.get(q.category_id) || "" : "",
+      explanation: q.explanation || "",
+      is_active: q.is_active,
+      times_played: q.times_played || 0,
+      times_correct: q.times_correct || 0,
+      created_at: q.created_at || "",
+    }));
+    let blob: Blob, name: string;
+    if (kind === "json") {
+      blob = new Blob([JSON.stringify(rows, null, 2)], { type: "application/json" });
+      name = `questions_export_${Date.now()}.json`;
+    } else {
+      const headers = Object.keys(rows[0]);
+      const csv = [
+        headers.join(","),
+        ...rows.map((r) => headers.map((h) => `"${String((r as Record<string, unknown>)[h] ?? "").replace(/"/g, '""')}"`).join(",")),
+      ].join("\n");
+      blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+      name = `questions_export_${Date.now()}.csv`;
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = name; a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`تم تصدير ${rows.length} سؤال`);
+  };
+
 
   if (authLoading || checking) {
     return (
@@ -503,6 +567,33 @@ const Admin = () => {
                   </Select>
                 </div>
 
+                {/* Sort + page size + export */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger><SelectValue placeholder="ترتيب" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest">الأحدث</SelectItem>
+                      <SelectItem value="oldest">الأقدم</SelectItem>
+                      <SelectItem value="plays_desc">الأكثر محاولات</SelectItem>
+                      <SelectItem value="plays_asc">الأقل محاولات</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={String(pageSize)} onValueChange={(v) => setPageSize(parseInt(v))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10 / صفحة</SelectItem>
+                      <SelectItem value="20">20 / صفحة</SelectItem>
+                      <SelectItem value="50">50 / صفحة</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" size="sm" onClick={() => exportFiltered("csv")}>
+                    <Download className="h-4 w-4 ml-1" /> تصدير CSV
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => exportFiltered("json")}>
+                    <Download className="h-4 w-4 ml-1" /> تصدير JSON
+                  </Button>
+                </div>
+
                 {/* Result count + clear */}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">
@@ -530,7 +621,7 @@ const Admin = () => {
                   <p className="text-center text-muted-foreground py-8">مفيش نتائج</p>
                 ) : (
                   <div className="space-y-2">
-                    {filtered.map((q) => {
+                    {pageItems.map((q) => {
                       const cat = categories.find((c) => c.id === q.category_id);
                       return (
                         <div
@@ -543,15 +634,23 @@ const Admin = () => {
                             onClick={() => openEdit(q)}
                             className="flex-1 min-w-0 text-right hover:opacity-80"
                           >
-                            <p className="font-medium mb-1.5 line-clamp-2">{q.question}</p>
+                            <p className="font-medium mb-1.5 line-clamp-2">
+                              <HighlightText text={q.question} term={search} />
+                            </p>
                             <div className="flex flex-wrap gap-1.5 text-xs">
                               {cat && <Badge variant="secondary">{cat.name_ar}</Badge>}
                               <Badge variant="outline">{difficultyLabel(q.difficulty)}</Badge>
                               <Badge variant="outline" className="text-success border-success/40">
-                                ✓ {q.options[q.correct_answer]}
+                                ✓ <HighlightText text={q.options[q.correct_answer] || ""} term={search} />
                               </Badge>
+                              {(q.times_played ?? 0) > 0 && (
+                                <Badge variant="outline" className="text-muted-foreground">
+                                  محاولات: {q.times_played}
+                                </Badge>
+                              )}
                             </div>
                           </button>
+
                           <div className="flex flex-col items-center gap-2">
                             <Switch checked={q.is_active} onCheckedChange={() => toggleActive(q)} />
                             <Button size="icon" variant="ghost" onClick={() => openEdit(q)}>
@@ -566,6 +665,33 @@ const Admin = () => {
                     })}
                   </div>
                 )}
+
+                {/* Pagination */}
+                {filtered.length > pageSize && (
+                  <div className="flex items-center justify-between gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    >
+                      السابق
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      صفحة <span className="font-bold text-foreground">{page}</span> من{" "}
+                      <span className="font-bold text-foreground">{totalPages}</span>
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page >= totalPages}
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    >
+                      التالي
+                    </Button>
+                  </div>
+                )}
+
               </CardContent>
             </Card>
           </TabsContent>
@@ -728,4 +854,23 @@ function parseCSVLine(line: string): string[] {
   return result;
 }
 
+const HighlightText = ({ text, term }: { text: string; term: string }) => {
+  const t = term.trim();
+  if (!t) return <>{text}</>;
+  const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const parts = text.split(new RegExp(`(${escaped})`, "gi"));
+  return (
+    <>
+      {parts.map((p, i) =>
+        p.toLowerCase() === t.toLowerCase() ? (
+          <mark key={i} className="bg-warning/30 text-foreground rounded px-0.5">{p}</mark>
+        ) : (
+          <span key={i}>{p}</span>
+        )
+      )}
+    </>
+  );
+};
+
 export default Admin;
+

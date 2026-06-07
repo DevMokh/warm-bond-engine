@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Heart, Timer, Trophy, X, Check, RotateCw, Maximize2, Minimize2, Volume2, VolumeX } from "lucide-react";
+import { Loader2, Heart, Timer, Trophy, X, Check, RotateCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useFullscreen } from "@/hooks/useFullscreen";
@@ -268,20 +268,11 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
             onReady={() => setSplashDone(true)}
           />
         )}
-        {/* Floating controls + HUD */}
+        {/* Floating HUD */}
         {!loading && pool.length > 0 && !finished && (
-          <>
-            <div className="absolute top-2 left-2 z-20 flex gap-1 sm:top-3 sm:left-3">
-              <Button size="icon" variant="ghost" className="h-7 w-7 sm:h-8 sm:w-8" onClick={() => setMuted(!muted)} title={muted ? "تشغيل الصوت" : "كتم الصوت"} aria-label="صوت">
-                {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-              </Button>
-              <Button size="icon" variant="ghost" className="h-7 w-7 sm:h-8 sm:w-8" onClick={toggleFs} title="ملء الشاشة" aria-label="ملء الشاشة">
-                {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-              </Button>
-            </div>
-            <div className="absolute top-2 right-10 z-20 sm:top-3 sm:right-12"><PlayerHud compact /></div>
-          </>
+          <div className="absolute top-2 right-10 z-20 sm:top-3 sm:right-12"><PlayerHud compact /></div>
         )}
+
         {loading ? (
           <div className="py-12 sm:py-16 flex flex-col items-center gap-3">
             <Loader2 className="h-7 w-7 sm:h-8 sm:w-8 animate-spin text-primary" />
@@ -309,7 +300,7 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
             onClose={onClose}
           />
         ) : current ? (
-          <div className="flex flex-col min-h-[calc(100dvh-1rem)] sm:min-h-0 sm:space-y-4">
+          <div className="flex flex-col gap-2 sm:space-y-4">
             {/* Header: category pills + close */}
             <div className="flex items-center justify-between gap-2">
               <button onClick={handleClose} className="text-muted-foreground hover:text-foreground p-1 -m-1" aria-label="إغلاق">
@@ -364,7 +355,7 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
 
             {/* Centered question + options */}
             <div
-              className="flex-1 flex flex-col justify-center items-stretch mx-auto w-full"
+              className="flex flex-col items-stretch mx-auto w-full mt-3 sm:mt-2"
               style={{
                 gap: "clamp(0.625rem, 2.5vw, 1rem)",
                 paddingTop: "clamp(0.5rem, 2vw, 1rem)",
