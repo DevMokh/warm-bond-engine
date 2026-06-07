@@ -284,7 +284,7 @@ const Admin = () => {
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
-    return questions.filter((q) => {
+    const out = questions.filter((q) => {
       if (filterCat !== "all" && q.category_id !== filterCat) return false;
       if (filterDiff !== "all" && q.difficulty !== filterDiff) return false;
       if (filterActive !== "all") {
@@ -303,7 +303,63 @@ const Admin = () => {
       }
       return true;
     });
-  }, [questions, search, filterCat, filterDiff, filterActive]);
+    out.sort((a, b) => {
+      if (sortBy === "oldest") return (a.created_at || "").localeCompare(b.created_at || "");
+      if (sortBy === "plays_desc") return (b.times_played || 0) - (a.times_played || 0);
+      if (sortBy === "plays_asc") return (a.times_played || 0) - (b.times_played || 0);
+      return (b.created_at || "").localeCompare(a.created_at || ""); // newest
+    });
+    return out;
+  }, [questions, search, filterCat, filterDiff, filterActive, sortBy]);
+
+  // Reset to page 1 when filters/sort change
+  useEffect(() => { setPage(1); }, [search, filterCat, filterDiff, filterActive, sortBy, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const pageItems = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page, pageSize]);
+
+  const exportFiltered = (kind: "csv" | "json") => {
+    if (filtered.length === 0) { toast.error("مفيش نتائج للتصدير"); return; }
+    const catMap = new Map(categories.map((c) => [c.id, c.slug] as const));
+    const rows = filtered.map((q) => ({
+      id: q.id,
+      question: q.question,
+      option1: q.options[0] || "",
+      option2: q.options[1] || "",
+      option3: q.options[2] || "",
+      option4: q.options[3] || "",
+      correct_answer: q.correct_answer,
+      difficulty: q.difficulty,
+      category_slug: q.category_id ? catMap.get(q.category_id) || "" : "",
+      explanation: q.explanation || "",
+      is_active: q.is_active,
+      times_played: q.times_played || 0,
+      times_correct: q.times_correct || 0,
+      created_at: q.created_at || "",
+    }));
+    let blob: Blob, name: string;
+    if (kind === "json") {
+      blob = new Blob([JSON.stringify(rows, null, 2)], { type: "application/json" });
+      name = `questions_export_${Date.now()}.json`;
+    } else {
+      const headers = Object.keys(rows[0]);
+      const csv = [
+        headers.join(","),
+        ...rows.map((r) => headers.map((h) => `"${String((r as Record<string, unknown>)[h] ?? "").replace(/"/g, '""')}"`).join(",")),
+      ].join("\n");
+      blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+      name = `questions_export_${Date.now()}.csv`;
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = name; a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`تم تصدير ${rows.length} سؤال`);
+  };
+
 
   if (authLoading || checking) {
     return (
