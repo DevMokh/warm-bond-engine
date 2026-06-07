@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Heart, Timer, Trophy, X, Check, RotateCw, Maximize2, Minimize2, Volume2, VolumeX } from "lucide-react";
+import { Loader2, Heart, Timer, Trophy, X, Check, RotateCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useFullscreen } from "@/hooks/useFullscreen";
