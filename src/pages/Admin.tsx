@@ -665,6 +665,33 @@ const Admin = () => {
                     })}
                   </div>
                 )}
+
+                {/* Pagination */}
+                {filtered.length > pageSize && (
+                  <div className="flex items-center justify-between gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    >
+                      السابق
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      صفحة <span className="font-bold text-foreground">{page}</span> من{" "}
+                      <span className="font-bold text-foreground">{totalPages}</span>
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page >= totalPages}
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    >
+                      التالي
+                    </Button>
+                  </div>
+                )}
+
               </CardContent>
             </Card>
           </TabsContent>
