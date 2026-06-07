@@ -275,13 +275,27 @@ const Admin = () => {
   }, [questions]);
 
   const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
     return questions.filter((q) => {
       if (filterCat !== "all" && q.category_id !== filterCat) return false;
       if (filterDiff !== "all" && q.difficulty !== filterDiff) return false;
-      if (search && !q.question.toLowerCase().includes(search.toLowerCase())) return false;
+      if (filterActive !== "all") {
+        const wantActive = filterActive === "active";
+        if (q.is_active !== wantActive) return false;
+      }
+      if (term) {
+        const hay = [
+          q.question,
+          ...(q.options || []),
+          q.explanation || "",
+        ]
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(term)) return false;
+      }
       return true;
     });
-  }, [questions, search, filterCat, filterDiff]);
+  }, [questions, search, filterCat, filterDiff, filterActive]);
 
   if (authLoading || checking) {
     return (
