@@ -355,7 +355,7 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
 
             {/* Centered question + options */}
             <div
-              className="flex-1 flex flex-col justify-center items-stretch mx-auto w-full"
+              className="flex flex-col items-stretch mx-auto w-full mt-3 sm:mt-2"
               style={{
                 gap: "clamp(0.625rem, 2.5vw, 1rem)",
                 paddingTop: "clamp(0.5rem, 2vw, 1rem)",
