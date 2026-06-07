@@ -30,7 +30,11 @@ type Question = {
   category_id: string | null;
   is_active: boolean;
   explanation: string | null;
+  created_at?: string;
+  times_played?: number;
+  times_correct?: number;
 };
+
 
 const emptyForm = {
   question: "",
