@@ -63,6 +63,7 @@ const Admin = () => {
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState<string>("all");
   const [filterDiff, setFilterDiff] = useState<string>("all");
+  const [filterActive, setFilterActive] = useState<string>("all");
 
   // Edit dialog
   const [editing, setEditing] = useState<Question | null>(null);
