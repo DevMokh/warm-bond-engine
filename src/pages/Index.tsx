@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Brain, Gamepad2, Trophy, Sparkles, Calendar, Users, Zap, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -17,7 +14,6 @@ interface ProfileStats {
 interface LeaderEntry {
   display_name: string;
   total_xp: number;
-  avatar_url: string | null;
 }
 
 const Index = () => {
@@ -27,7 +23,7 @@ const Index = () => {
   const [topPlayers, setTopPlayers] = useState<LeaderEntry[]>([]);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const run = async () => {
       if (user) {
         const { data } = await supabase
           .from("profiles")
@@ -36,61 +32,54 @@ const Index = () => {
           .maybeSingle();
         if (data) setProfile(data);
       }
-
       const { data: leaders } = await supabase
         .from("profiles")
-        .select("display_name, total_xp, avatar_url")
+        .select("display_name, total_xp")
         .order("total_xp", { ascending: false })
         .limit(5);
       if (leaders) setTopPlayers(leaders);
     };
-
-    fetchData();
+    run();
   }, [user]);
 
   const features = [
-    { icon: Gamepad2, title: "لعب فردي", desc: "اختار فئة وصعوبة وابدأ" },
-    { icon: Calendar, title: "تحدي يومي", desc: "10 أسئلة كل يوم + XP مضاعف" },
-    { icon: Users, title: "غرف جماعية", desc: "العب لايف مع أصحابك" },
-    { icon: Sparkles, title: "ذكاء اصطناعي", desc: "شرح الإجابات بالـ AI" },
+    { num: "01", title: "لعب فردي", desc: "اختر فئة، صعوبة، وابدأ رحلتك." },
+    { num: "02", title: "تحدي يومي", desc: "عشرة أسئلة كل يوم، نقاط مضاعفة." },
+    { num: "03", title: "غرف جماعية", desc: "العب لايف مع أصحابك بلحظتها." },
+    { num: "04", title: "شرح بالذكاء", desc: "تفسير مُوجز لكل إجابة." },
   ];
 
   return (
     <div className="min-h-screen pb-20 md:pb-0">
-      
-
       {/* Hero */}
-      <section className="container py-7 md:py-20">
-        <div className="max-w-3xl mx-auto text-center space-y-4 md:space-y-6 animate-slide-up">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-primary/10 border border-primary/20">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-primary">منصة الأسئلة والتحديات #1</span>
-          </div>
-
-          <h1 className="text-[34px] md:text-6xl lg:text-7xl font-extrabold leading-tight">
-            <span className="gradient-text">شغّل مخك</span>
+      <section className="container pt-12 md:pt-24 pb-10 md:pb-16">
+        <div className="max-w-2xl mx-auto text-center space-y-6">
+          <p className="kicker">مسار المعرفة · النسخة الجديدة</p>
+          <h1
+            className="font-serif leading-[1.15] text-foreground"
+            style={{ fontSize: "clamp(2.25rem, 8vw, 4.5rem)" }}
+          >
+            شغّل مخك.
             <br />
-            <span className="text-foreground">واتحدى أصحابك</span>
+            <span className="text-primary">تعلّم بهدوء.</span>
           </h1>
-
-          <p className="text-sm md:text-xl text-muted-foreground max-w-2xl mx-auto">
-            اختبر معلوماتك في مئات الفئات، اكسب نقاط XP، افتح إنجازات، والعب لايف مع أصحابك في غرف جماعية
+          <p className="text-base md:text-lg text-muted-foreground max-w-lg mx-auto leading-relaxed">
+            منصة أسئلة تقرأها كما تقرأ كتاباً. اثنتا عشرة فئة معرفية،
+            أربعة تخصصات لكل فئة، ووقت هادئ لتفكيرك.
           </p>
-
-          <div className="flex flex-col sm:flex-row gap-2.5 md:gap-3 justify-center pt-2 md:pt-4">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
             <Button
               size="lg"
-              className="text-sm md:text-base font-bold h-12 md:h-14 px-6 md:px-8 gradient-bg hover:opacity-90 shadow-elevated"
+              className="text-sm font-medium h-12 px-8 rounded-xl"
               onClick={() => navigate(user ? "/play" : "/auth")}
             >
-              <Gamepad2 className="h-5 w-5" />
-              ابدأ اللعب الآن
+              ابدأ اللعب
             </Button>
             {!user && (
               <Button
                 size="lg"
                 variant="outline"
-                className="text-sm md:text-base h-12 md:h-14 px-6 md:px-8"
+                className="text-sm h-12 px-8 rounded-xl"
                 onClick={() => navigate("/auth")}
               >
                 إنشاء حساب
@@ -100,126 +89,93 @@ const Index = () => {
         </div>
       </section>
 
-      {/* User Stats (if logged in) */}
+      {/* Profile summary */}
       {user && profile && (
-        <section className="container pb-12">
-          <Card className="gradient-card border-primary/20 shadow-card animate-fade-in">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">أهلاً</p>
-                  <h2 className="text-2xl font-bold">{profile.display_name}</h2>
-                </div>
-                <div className="grid grid-cols-3 gap-6 text-center">
-                  <div>
-                    <div className="flex items-center gap-1 justify-center text-primary mb-1">
-                      <Zap className="h-4 w-4" />
-                      <span className="text-2xl font-extrabold">{profile.total_xp}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">نقطة XP</p>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1 justify-center text-accent mb-1">
-                      <Target className="h-4 w-4" />
-                      <span className="text-2xl font-extrabold">{profile.level}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">المستوى</p>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1 justify-center text-success mb-1">
-                      <Gamepad2 className="h-4 w-4" />
-                      <span className="text-2xl font-extrabold">{profile.games_played}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">لعبة</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <section className="container py-8">
+          <div className="max-w-2xl mx-auto border-y border-border py-6 grid grid-cols-4 gap-4 text-center">
+            <div className="border-l border-border">
+              <p className="kicker mb-1.5">أهلاً</p>
+              <p className="text-sm font-medium truncate">{profile.display_name}</p>
+            </div>
+            <div className="border-l border-border">
+              <p className="kicker mb-1.5">XP</p>
+              <p className="text-lg font-serif tabular-nums">{profile.total_xp}</p>
+            </div>
+            <div className="border-l border-border">
+              <p className="kicker mb-1.5">المستوى</p>
+              <p className="text-lg font-serif tabular-nums">{profile.level}</p>
+            </div>
+            <div>
+              <p className="kicker mb-1.5">ألعاب</p>
+              <p className="text-lg font-serif tabular-nums">{profile.games_played}</p>
+            </div>
+          </div>
         </section>
       )}
 
-      {/* Features */}
-      <section className="container py-12">
-        <h2 className="text-3xl font-extrabold text-center mb-10">
-          أوضاع <span className="gradient-text">اللعب</span>
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {features.map((feature, i) => {
-            const Icon = feature.icon;
-            return (
-              <Card
-                key={feature.title}
-                className="gradient-card border-border/50 hover:border-primary/50 transition-smooth hover:scale-105 cursor-pointer animate-fade-in"
-                style={{ animationDelay: `${i * 100}ms` }}
+      {/* Features — magazine list */}
+      <section className="container py-12 md:py-16">
+        <div className="max-w-2xl mx-auto">
+          <div className="flex items-baseline justify-between mb-8 border-b border-border pb-3">
+            <h2 className="font-serif text-2xl">أوضاع اللعب</h2>
+            <span className="kicker">أربعة مسارات</span>
+          </div>
+          <div className="divide-y divide-border">
+            {features.map((f) => (
+              <button
+                key={f.num}
                 onClick={() => navigate(user ? "/play" : "/auth")}
+                className="w-full py-5 flex items-center justify-between text-right group transition-colors hover:bg-muted/40 px-3 -mx-3 rounded-lg"
               >
-                <CardContent className="p-6 text-center space-y-3">
-                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                    <Icon className="h-6 w-6 text-primary" />
+                <div className="flex items-baseline gap-5">
+                  <span className="text-xs font-semibold text-primary tabular-nums">{f.num}</span>
+                  <div>
+                    <h3 className="text-lg font-medium text-foreground">{f.title}</h3>
+                    <p className="text-sm text-muted-foreground mt-0.5">{f.desc}</p>
                   </div>
-                  <h3 className="font-bold">{feature.title}</h3>
-                  <p className="text-xs text-muted-foreground">{feature.desc}</p>
-                </CardContent>
-              </Card>
-            );
-          })}
+                </div>
+                <span className="text-muted-foreground text-lg group-hover:text-primary group-hover:-translate-x-1 transition-all">←</span>
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Top Players */}
+      {/* Top players */}
       {topPlayers.length > 0 && (
         <section className="container py-12">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-extrabold flex items-center gap-2">
-              <Trophy className="h-6 w-6 text-primary" />
-              صدارة اللاعبين
-            </h2>
-            <Button variant="ghost" size="sm" onClick={() => navigate("/leaderboard")}>
-              عرض الكل
-            </Button>
-          </div>
-          <Card className="gradient-card border-border/50">
-            <CardContent className="p-4 space-y-2">
-              {topPlayers.map((player, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary/50 transition-smooth"
-                >
-                  <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-full font-extrabold text-sm ${
-                      i === 0
-                        ? "bg-primary text-primary-foreground"
-                        : i === 1
-                        ? "bg-muted text-foreground"
-                        : i === 2
-                        ? "bg-accent/30 text-accent"
-                        : "bg-secondary text-muted-foreground"
-                    }`}
-                  >
-                    {i + 1}
+          <div className="max-w-2xl mx-auto">
+            <div className="flex items-baseline justify-between mb-6 border-b border-border pb-3">
+              <h2 className="font-serif text-2xl">صدارة اللاعبين</h2>
+              <button
+                onClick={() => navigate("/leaderboard")}
+                className="kicker hover:text-primary transition-colors"
+              >
+                عرض الكل ←
+              </button>
+            </div>
+            <div className="space-y-0 divide-y divide-border">
+              {topPlayers.map((p, i) => (
+                <div key={i} className="flex items-center justify-between py-4">
+                  <div className="flex items-center gap-4">
+                    <span className={`text-xs font-semibold tabular-nums w-6 ${i === 0 ? "text-primary" : "text-muted-foreground"}`}>
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <p className="font-medium">{p.display_name}</p>
                   </div>
-                  <div className="flex-1">
-                    <p className="font-semibold">{player.display_name}</p>
-                  </div>
-                  <div className="flex items-center gap-1 text-primary font-bold">
-                    <Zap className="h-4 w-4" />
-                    {player.total_xp}
-                  </div>
+                  <p className="text-sm font-serif tabular-nums text-muted-foreground">{p.total_xp}</p>
                 </div>
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </section>
       )}
 
-      {/* Footer */}
-      <footer className="container py-12 text-center text-sm text-muted-foreground border-t border-border/30 mt-12">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <Brain className="h-4 w-4 text-primary" />
-          <span className="font-bold">شغّل مخك</span>
+      <footer className="container py-10 mt-8 border-t border-border">
+        <div className="max-w-2xl mx-auto text-center space-y-2">
+          <p className="font-serif text-lg">شغّل مخك</p>
+          <p className="kicker">منصة الأسئلة والتحديات · هادئة، أنيقة، عربية</p>
         </div>
-        <p>منصة الأسئلة والتحديات التفاعلية</p>
       </footer>
     </div>
   );
