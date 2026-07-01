@@ -439,62 +439,45 @@ const Play = () => {
 
       {/* Play modes dialog */}
       <Dialog open={!!selectedBranch} onOpenChange={(open) => !open && setSelectedBranch(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-[18px] sm:p-6">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-6 sm:p-8">
           {selected && selectedBranch && (
             <>
-              <DialogHeader className="text-right">
-                <div className="flex items-center gap-3 mb-1 sm:mb-2">
-                  <div className="inline-flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl sm:rounded-2xl bg-primary/15 ring-1 ring-primary/20">
-                    <selected.icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <DialogTitle className="text-lg md:text-2xl font-extrabold">
-                      {selected.title} <span className="text-primary">·</span> {selectedBranch.title}
-                    </DialogTitle>
-                    <DialogDescription className="text-sm">
-                      اختار وضع اللعب اللي يناسبك دلوقتي
-                    </DialogDescription>
-                  </div>
-                </div>
+              <DialogHeader className="text-right space-y-2">
+                <p className="kicker">{selected.title} · {selectedBranch.title}</p>
+                <DialogTitle className="text-2xl font-serif">اختر وضع اللعب</DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground">
+                  ثلاث مجموعات من الأوضاع. تجربة مختلفة في كل واحدة.
+                </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-4 sm:space-y-6 mt-3 sm:mt-4">
+              <div className="mt-6 space-y-8">
                 {modeGroups.map((group) => (
-                  <div key={group.id} className="space-y-2 sm:space-y-3">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-base sm:text-lg font-extrabold">{group.label}</h3>
-                      <Badge variant={group.badgeVariant} className="text-[10px]">
-                        {group.badge}
-                      </Badge>
-                      <div className="flex-1 h-px bg-border/50" />
+                  <div key={group.id} className="space-y-3">
+                    <div className="flex items-baseline justify-between border-b border-border pb-2">
+                      <h3 className="text-sm font-medium tracking-wider uppercase text-foreground">
+                        {group.label}
+                      </h3>
+                      <span className="kicker">{group.badge}</span>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-2.5">
+                    <div className="grid grid-cols-2 gap-2">
                       {group.modes.map((mode) => {
                         const ModeIcon = mode.icon;
                         return (
                           <button
                             key={mode.id}
                             onClick={() => handleMode(mode)}
-                            className="text-right group"
+                            className="group text-right p-4 border border-border rounded-xl bg-card hover:border-primary hover:bg-muted/40 transition-colors flex items-start gap-3"
                           >
-                            <Card
-                              className={`border-primary/10 bg-gradient-to-br ${selected.gradient} backdrop-blur-sm transition-bounce hover:border-primary/40 hover:shadow-elevated hover:-translate-y-0.5 h-full`}
-                            >
-                              <CardContent className="p-2.5 sm:p-3 space-y-1.5 sm:space-y-2">
-                                <div className="inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg sm:rounded-xl bg-primary/15 ring-1 ring-primary/20 group-hover:scale-110 transition-bounce">
-                                  <ModeIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
-                                </div>
-                                <div className="space-y-0.5">
-                                  <h4 className="text-sm font-bold leading-tight">
-                                    {mode.title}
-                                  </h4>
-                                  <p className="text-[10px] text-muted-foreground leading-snug">
-                                    {mode.hint}
-                                  </p>
-                                </div>
-                              </CardContent>
-                            </Card>
+                            <div className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-muted border border-border shrink-0">
+                              <ModeIcon className="h-4 w-4 text-primary" />
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="text-sm font-medium text-foreground">{mode.title}</h4>
+                              <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                                {mode.hint}
+                              </p>
+                            </div>
                           </button>
                         );
                       })}
@@ -504,15 +487,16 @@ const Play = () => {
 
                 <button
                   onClick={closeAll}
-                  className="w-full text-xs text-muted-foreground hover:text-foreground transition-smooth py-2"
+                  className="w-full text-xs text-muted-foreground hover:text-primary transition-colors py-3 border-t border-border tracking-wider"
                 >
-                  ← رجوع لاختيار فئة تانية
+                  ← الرجوع لاختيار فئة أخرى
                 </button>
               </div>
             </>
           )}
         </DialogContent>
       </Dialog>
+
 
       {/* Quiz player */}
       {activeMode && selected && selectedBranch && (
