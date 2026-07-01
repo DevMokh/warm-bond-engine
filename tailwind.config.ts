@@ -18,8 +18,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Cairo", "Tajawal", "system-ui", "sans-serif"],
-        display: ["Tajawal", "Cairo", "sans-serif"],
+        sans: ['"IBM Plex Sans Arabic"', "system-ui", "sans-serif"],
+        display: ['"Noto Naskh Arabic"', "serif"],
+        serif: ['"Noto Naskh Arabic"', "serif"],
       },
       colors: {
         border: "hsl(var(--border))",

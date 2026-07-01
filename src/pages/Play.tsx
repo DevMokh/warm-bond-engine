@@ -339,117 +339,95 @@ const Play = () => {
 
   return (
     <div className="min-h-screen pb-20 md:pb-8">
-      
-      <div className="container py-5 md:py-12">
+      <div className="container py-10 md:py-16 max-w-3xl">
         {/* Header */}
-        <div className="text-center mb-5 md:mb-12 space-y-2 md:space-y-3">
-          <h1 className="text-xl md:text-5xl font-extrabold">
-            اختار <span className="gradient-text">الفئة</span>
+        <div className="text-center mb-10 md:mb-14 space-y-3">
+          <p className="kicker">اثنتا عشرة فئة معرفية</p>
+          <h1
+            className="font-serif text-foreground leading-tight"
+            style={{ fontSize: "clamp(1.75rem, 6vw, 3rem)" }}
+          >
+            اختر مسار المعرفة
           </h1>
-          <p className="text-muted-foreground text-xs md:text-lg max-w-2xl mx-auto">
-            12 فئة معرفية - وكل فئة فيها 4 تخصصات فرعية. اختار اللي يحمسك دلوقتي
+          <p className="text-sm md:text-base text-muted-foreground max-w-md mx-auto leading-relaxed">
+            لكل فئة أربعة تخصصات فرعية. خذ وقتك.
           </p>
         </div>
 
-        {/* Categories grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 md:gap-5">
-          {categories.map((cat) => {
+        {/* Categories — editorial list */}
+        <div className="divide-y divide-border border-y border-border">
+          {categories.map((cat, i) => {
             const Icon = cat.icon;
             return (
               <button
                 key={cat.id}
                 onClick={() => setSelected(cat)}
-                className="group text-right"
+                className="group w-full py-5 px-2 flex items-center justify-between text-right transition-colors hover:bg-muted/40 rounded-lg -mx-2"
               >
-                <Card
-                  className={`relative overflow-hidden border-primary/10 bg-gradient-to-br ${cat.gradient} backdrop-blur-sm transition-bounce hover:border-primary/40 hover:shadow-elevated hover:-translate-y-1 h-full`}
-                >
-                  <CardContent className="p-[13px] md:p-6 space-y-2.5 md:space-y-4">
-                    <div className="flex items-start justify-between">
-                      <div className="inline-flex h-10 w-10 md:h-14 md:w-14 items-center justify-center rounded-xl md:rounded-2xl bg-primary/15 ring-1 ring-primary/20 group-hover:scale-110 group-hover:bg-primary/25 transition-bounce">
-                        <Icon className="h-5 w-5 md:h-7 md:w-7 text-primary" />
-                      </div>
-                      {cat.badge && (
-                        <Badge variant={cat.badgeVariant ?? "secondary"} className="text-[10px] md:text-xs">
-                          {cat.badge}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="space-y-1.5">
-                      <h3 className="text-base md:text-xl font-extrabold leading-tight">
+                <div className="flex items-center gap-4 md:gap-5 min-w-0">
+                  <span className="text-xs font-semibold text-primary tabular-nums w-6 shrink-0">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-muted border border-border shrink-0">
+                    <Icon className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base md:text-lg font-medium text-foreground truncate">
                         {cat.title}
                       </h3>
-                      <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
-                        {cat.description}
-                      </p>
+                      {cat.badge && (
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-muted border border-border text-muted-foreground tracking-wider">
+                          {cat.badge}
+                        </span>
+                      )}
                     </div>
-                    <div className="flex items-center justify-between pt-2 border-t border-primary/10">
-                      <span className="text-[11px] md:text-xs text-muted-foreground">
-                        4 تخصصات فرعية
-                      </span>
-                      <ChevronLeft className="h-4 w-4 text-primary/70 group-hover:-translate-x-1 transition-transform" />
-                    </div>
-                  </CardContent>
-                </Card>
+                    <p className="text-xs md:text-sm text-muted-foreground mt-0.5 truncate">
+                      {cat.description}
+                    </p>
+                  </div>
+                </div>
+                <ChevronLeft className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:-translate-x-1 transition-all shrink-0" />
               </button>
             );
           })}
         </div>
 
-        {/* Footer hint */}
-        <div className="mt-6 md:mt-10 text-center">
-          <p className="text-xs md:text-sm text-muted-foreground">
-            🎯 اضغط على فئة عشان تشوف الـ 4 تخصصات الفرعية بتاعتها
-          </p>
-        </div>
+        <p className="mt-8 text-center text-xs text-muted-foreground tracking-wider">
+          اختر فئة لعرض التخصصات الفرعية
+        </p>
       </div>
 
       {/* Branches dialog */}
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent className="max-w-2xl p-[18px] sm:p-6">
+        <DialogContent className="max-w-lg p-6 sm:p-8">
           {selected && (
             <>
-              <DialogHeader className="text-right">
-                <div className="flex items-center gap-3 mb-1 sm:mb-2">
-                  <div className="inline-flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl sm:rounded-2xl bg-primary/15 ring-1 ring-primary/20">
-                    <selected.icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                  </div>
-                  <div>
-                    <DialogTitle className="text-xl sm:text-2xl font-extrabold">
-                      {selected.title}
-                    </DialogTitle>
-                    <DialogDescription className="text-sm">
-                      اختار التخصص الفرعي اللي تحب تلعب فيه
-                    </DialogDescription>
-                  </div>
-                </div>
+              <DialogHeader className="text-right space-y-2">
+                <p className="kicker">التخصصات الفرعية</p>
+                <DialogTitle className="text-2xl font-serif">{selected.title}</DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground">
+                  اختر التخصص الذي تريد التعمق فيه.
+                </DialogDescription>
               </DialogHeader>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 mt-3 sm:mt-4">
+              <div className="mt-4 divide-y divide-border border-y border-border">
                 {selected.branches.map((branch, idx) => (
                   <button
                     key={branch.id}
                     onClick={() => handleBranch(branch)}
-                    className="text-right group"
+                    className="w-full py-4 px-2 flex items-center justify-between text-right group hover:bg-muted/40 rounded-lg -mx-2 transition-colors"
                   >
-                    <Card
-                      className={`border-primary/10 bg-gradient-to-br ${selected.gradient} backdrop-blur-sm transition-bounce hover:border-primary/40 hover:shadow-elevated hover:-translate-y-0.5 h-full`}
-                    >
-                      <CardContent className="p-3 sm:p-4 space-y-1.5 sm:space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Badge variant="outline" className="text-[10px]">
-                            فرع {idx + 1}
-                          </Badge>
-                          <ChevronLeft className="h-4 w-4 text-primary/70 group-hover:-translate-x-1 transition-transform" />
-                        </div>
-                        <h4 className="text-sm md:text-lg font-bold">
-                          {branch.title}
-                        </h4>
-                        <p className="text-xs text-muted-foreground">
-                          {branch.hint}
-                        </p>
-                      </CardContent>
-                    </Card>
+                    <div className="flex items-baseline gap-4">
+                      <span className="text-xs font-semibold text-primary tabular-nums">
+                        {String(idx + 1).padStart(2, "0")}
+                      </span>
+                      <div>
+                        <h4 className="text-base font-medium text-foreground">{branch.title}</h4>
+                        <p className="text-xs text-muted-foreground mt-0.5">{branch.hint}</p>
+                      </div>
+                    </div>
+                    <ChevronLeft className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:-translate-x-1 transition-all" />
                   </button>
                 ))}
               </div>
@@ -458,64 +436,48 @@ const Play = () => {
         </DialogContent>
       </Dialog>
 
+
       {/* Play modes dialog */}
       <Dialog open={!!selectedBranch} onOpenChange={(open) => !open && setSelectedBranch(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-[18px] sm:p-6">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-6 sm:p-8">
           {selected && selectedBranch && (
             <>
-              <DialogHeader className="text-right">
-                <div className="flex items-center gap-3 mb-1 sm:mb-2">
-                  <div className="inline-flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl sm:rounded-2xl bg-primary/15 ring-1 ring-primary/20">
-                    <selected.icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <DialogTitle className="text-lg md:text-2xl font-extrabold">
-                      {selected.title} <span className="text-primary">·</span> {selectedBranch.title}
-                    </DialogTitle>
-                    <DialogDescription className="text-sm">
-                      اختار وضع اللعب اللي يناسبك دلوقتي
-                    </DialogDescription>
-                  </div>
-                </div>
+              <DialogHeader className="text-right space-y-2">
+                <p className="kicker">{selected.title} · {selectedBranch.title}</p>
+                <DialogTitle className="text-2xl font-serif">اختر وضع اللعب</DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground">
+                  ثلاث مجموعات من الأوضاع. تجربة مختلفة في كل واحدة.
+                </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-4 sm:space-y-6 mt-3 sm:mt-4">
+              <div className="mt-6 space-y-8">
                 {modeGroups.map((group) => (
-                  <div key={group.id} className="space-y-2 sm:space-y-3">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-base sm:text-lg font-extrabold">{group.label}</h3>
-                      <Badge variant={group.badgeVariant} className="text-[10px]">
-                        {group.badge}
-                      </Badge>
-                      <div className="flex-1 h-px bg-border/50" />
+                  <div key={group.id} className="space-y-3">
+                    <div className="flex items-baseline justify-between border-b border-border pb-2">
+                      <h3 className="text-sm font-medium tracking-wider uppercase text-foreground">
+                        {group.label}
+                      </h3>
+                      <span className="kicker">{group.badge}</span>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-2.5">
+                    <div className="grid grid-cols-2 gap-2">
                       {group.modes.map((mode) => {
                         const ModeIcon = mode.icon;
                         return (
                           <button
                             key={mode.id}
                             onClick={() => handleMode(mode)}
-                            className="text-right group"
+                            className="group text-right p-4 border border-border rounded-xl bg-card hover:border-primary hover:bg-muted/40 transition-colors flex items-start gap-3"
                           >
-                            <Card
-                              className={`border-primary/10 bg-gradient-to-br ${selected.gradient} backdrop-blur-sm transition-bounce hover:border-primary/40 hover:shadow-elevated hover:-translate-y-0.5 h-full`}
-                            >
-                              <CardContent className="p-2.5 sm:p-3 space-y-1.5 sm:space-y-2">
-                                <div className="inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg sm:rounded-xl bg-primary/15 ring-1 ring-primary/20 group-hover:scale-110 transition-bounce">
-                                  <ModeIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
-                                </div>
-                                <div className="space-y-0.5">
-                                  <h4 className="text-sm font-bold leading-tight">
-                                    {mode.title}
-                                  </h4>
-                                  <p className="text-[10px] text-muted-foreground leading-snug">
-                                    {mode.hint}
-                                  </p>
-                                </div>
-                              </CardContent>
-                            </Card>
+                            <div className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-muted border border-border shrink-0">
+                              <ModeIcon className="h-4 w-4 text-primary" />
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="text-sm font-medium text-foreground">{mode.title}</h4>
+                              <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                                {mode.hint}
+                              </p>
+                            </div>
                           </button>
                         );
                       })}
@@ -525,15 +487,16 @@ const Play = () => {
 
                 <button
                   onClick={closeAll}
-                  className="w-full text-xs text-muted-foreground hover:text-foreground transition-smooth py-2"
+                  className="w-full text-xs text-muted-foreground hover:text-primary transition-colors py-3 border-t border-border tracking-wider"
                 >
-                  ← رجوع لاختيار فئة تانية
+                  ← الرجوع لاختيار فئة أخرى
                 </button>
               </div>
             </>
           )}
         </DialogContent>
       </Dialog>
+
 
       {/* Quiz player */}
       {activeMode && selected && selectedBranch && (

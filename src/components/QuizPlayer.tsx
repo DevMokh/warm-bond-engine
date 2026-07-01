@@ -3,25 +3,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-
-import { Progress } from "@/components/ui/progress";
-import { Loader2, Heart, Timer, Trophy, X, Check, RotateCw } from "lucide-react";
+import { Loader2, X, Check, RotateCw, Scissors, Lightbulb, ChevronsLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import { useGameSounds } from "@/hooks/useGameSounds";
 import { useProfileStats } from "@/hooks/useProfileStats";
-import { PlayerHud } from "./PlayerHud";
 import { MatchSplash } from "./MatchSplash";
 
 export type ModeConfig = {
   id: string;
   title: string;
-  questionCount: number; // 0 = endless
+  questionCount: number;
   difficulty: "easy" | "medium" | "hard" | "mixed" | "ascend";
-  timerSeconds: number; // 0 = no timer
-  lives: number; // 0 = unlimited
+  timerSeconds: number;
+  lives: number;
   showExplanation: boolean;
 };
 
@@ -67,6 +63,8 @@ const shuffle = <T,>(arr: T[]): T[] => {
   return a;
 };
 
+const AR_LETTERS = ["أ", "ب", "ج", "د"];
+
 export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, branchTitle }: Props) => {
   const { user } = useAuth();
   const config = MODE_CONFIGS[modeId];
@@ -80,26 +78,27 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
   const [revealed, setRevealed] = useState(false);
   const [timeLeft, setTimeLeft] = useState(config?.timerSeconds || 0);
   const [finished, setFinished] = useState(false);
+  const [eliminatedIdx, setEliminatedIdx] = useState<number[]>([]);
+  const [hintUsed, setHintUsed] = useState(false);
+  const [powerCounts, setPowerCounts] = useState({ eliminate: 3, hint: 3, skip: 3 });
   const startTimeRef = useRef<number>(Date.now());
   const sessionSavedRef = useRef(false);
-  const { ref: fsRef, isFullscreen, toggle: toggleFs } = useFullscreen<HTMLDivElement>({ autoOnFirstGesture: true });
-  const { muted, setMuted, play } = useGameSounds();
+  const { ref: fsRef, isFullscreen } = useFullscreen<HTMLDivElement>({ autoOnFirstGesture: true });
+  const { play } = useGameSounds();
   const { awardGame } = useProfileStats();
   const [splashDone, setSplashDone] = useState(false);
 
-
-
-  // SFX on reveal / finish
   useEffect(() => {
     if (!revealed || !pool[index]) return;
     const isCorrect = selected === pool[index].correct_answer;
     play(isCorrect ? "correct" : "wrong");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [revealed]);
-  useEffect(() => { if (finished) play(correctCount / Math.max(1, index + 1) >= 0.5 ? "win" : "lose"); // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (finished) play(correctCount / Math.max(1, index + 1) >= 0.5 ? "win" : "lose");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finished]);
 
-  // Load questions
   useEffect(() => {
     if (!open || !config) return;
     let cancelled = false;
@@ -115,8 +114,9 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
     startTimeRef.current = Date.now();
     sessionSavedRef.current = false;
     setSplashDone(false);
-
-
+    setEliminatedIdx([]);
+    setHintUsed(false);
+    setPowerCounts({ eliminate: 3, hint: 3, skip: 3 });
 
     (async () => {
       let query = supabase
@@ -152,16 +152,15 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
     return () => { cancelled = true; };
   }, [open, modeId, categoryId, config]);
 
-  // Timer
   useEffect(() => {
     if (!open || loading || finished || revealed || !splashDone || !config?.timerSeconds) return;
     if (timeLeft <= 0) {
-      handleAnswer(-1); // timeout
+      handleAnswer(-1);
       return;
     }
     const t = setTimeout(() => setTimeLeft((s) => s - 1), 1000);
     return () => clearTimeout(t);
-  }, [timeLeft, open, loading, finished, revealed, config]);
+  }, [timeLeft, open, loading, finished, revealed, config, splashDone]);
 
   const current = pool[index];
   const totalQ = pool.length;
@@ -177,18 +176,15 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
       const diffBonus = current.difficulty === "hard" ? 30 : current.difficulty === "medium" ? 20 : 10;
       const timeBonus = config.timerSeconds > 0 ? Math.max(0, timeLeft) : 5;
       setScore((s) => s + diffBonus + timeBonus);
-    } else {
-      if (config.lives > 0) {
-        const newLives = livesLeft - 1;
-        setLivesLeft(newLives);
-        if (newLives <= 0) {
-          setTimeout(() => endGame(), 1500);
-          return;
-        }
+    } else if (config.lives > 0) {
+      const newLives = livesLeft - 1;
+      setLivesLeft(newLives);
+      if (newLives <= 0) {
+        setTimeout(() => endGame(), 1500);
+        return;
       }
     }
 
-    // Auto-advance unless explanation mode
     if (!config.showExplanation) {
       setTimeout(() => nextQuestion(), 1200);
     }
@@ -196,14 +192,31 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
 
   const nextQuestion = () => {
     const isLast = config.questionCount > 0 ? index + 1 >= totalQ : index + 1 >= pool.length;
-    if (isLast) {
-      endGame();
-      return;
-    }
+    if (isLast) { endGame(); return; }
     setIndex((i) => i + 1);
     setSelected(null);
     setRevealed(false);
     setTimeLeft(config.timerSeconds);
+    setEliminatedIdx([]);
+    setHintUsed(false);
+  };
+
+  const usePowerEliminate = () => {
+    if (!current || revealed || powerCounts.eliminate <= 0 || eliminatedIdx.length > 0) return;
+    const wrongs = current.options.map((_, i) => i).filter(i => i !== current.correct_answer);
+    const toRemove = shuffle(wrongs).slice(0, 2);
+    setEliminatedIdx(toRemove);
+    setPowerCounts(p => ({ ...p, eliminate: p.eliminate - 1 }));
+  };
+  const usePowerHint = () => {
+    if (!current || revealed || powerCounts.hint <= 0 || hintUsed) return;
+    setHintUsed(true);
+    setPowerCounts(p => ({ ...p, hint: p.hint - 1 }));
+  };
+  const usePowerSkip = () => {
+    if (!current || revealed || powerCounts.skip <= 0) return;
+    setPowerCounts(p => ({ ...p, skip: p.skip - 1 }));
+    nextQuestion();
   };
 
   const endGame = async () => {
@@ -213,7 +226,7 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
     const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
     const xp = Math.floor(score / 2) + correctCount * 5;
     const perfect = totalQ > 0 && correctCount === totalQ;
-    const coins = correctCount * 2 + (perfect ? 20 : 0); // perfect bonus
+    const coins = correctCount * 2 + (perfect ? 20 : 0);
     await supabase.from("game_sessions").insert({
       user_id: user.id,
       mode: "solo",
@@ -228,22 +241,17 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
     const award = await awardGame({ xp, coins, perfect });
     if (award?.leveledUp) {
       toast.success(`🎉 وصلت للمستوى ${award.level}!`, {
-        description: `+${xp} XP · +${coins} 🪙${perfect ? " · بونص الكمال 🌟" : ""}`,
-        duration: 7000,
+        description: `+${xp} XP · +${coins} 🪙${perfect ? " · بونص الكمال ✨" : ""}`,
       });
     } else {
       toast.success(`+${xp} XP · +${coins} 🪙`, {
-        description: `${correctCount}/${totalQ} صح${perfect ? " · بونص الكمال +20 🪙" : ""}${award && award.current_streak > 1 ? ` · سلسلة ${award.current_streak} 🔥` : ""}`,
-        duration: 6000,
+        description: `${correctCount}/${totalQ} صح${perfect ? " · بونص الكمال +20 🪙" : ""}`,
       });
     }
   };
 
-
   const handleClose = () => {
-    if (!finished && pool.length > 0 && !sessionSavedRef.current) {
-      endGame();
-    }
+    if (!finished && pool.length > 0 && !sessionSavedRef.current) endGame();
     onClose();
   };
 
@@ -255,10 +263,9 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
       <DialogContent
         ref={fsRef}
-        className="!fixed !inset-0 !left-0 !top-0 !translate-x-0 !translate-y-0 w-screen h-[100dvh] max-w-none overflow-y-auto rounded-none border-0 p-3 pt-11 gap-0 sm:!inset-auto sm:!left-[50%] sm:!top-[50%] sm:!translate-x-[-50%] sm:!translate-y-[-50%] sm:h-auto sm:max-h-[92vh] sm:max-w-2xl sm:rounded-lg sm:border sm:p-6 data-[fs=true]:max-w-none data-[fs=true]:max-h-none data-[fs=true]:h-[100dvh] data-[fs=true]:w-screen data-[fs=true]:rounded-none"
+        className="!fixed !inset-0 !left-0 !top-0 !translate-x-0 !translate-y-0 w-screen h-[100dvh] max-w-none overflow-y-auto rounded-none border-0 p-0 gap-0 bg-background sm:!inset-auto sm:!left-[50%] sm:!top-[50%] sm:!translate-x-[-50%] sm:!translate-y-[-50%] sm:h-auto sm:max-h-[92vh] sm:max-w-lg sm:rounded-3xl sm:border data-[fs=true]:max-w-none data-[fs=true]:max-h-none data-[fs=true]:h-[100dvh] data-[fs=true]:w-screen data-[fs=true]:rounded-none"
         data-fs={isFullscreen || undefined}
       >
-        {/* Pre-match splash */}
         {open && !splashDone && pool.length > 0 && !finished && (
           <MatchSplash
             title={config.title}
@@ -268,28 +275,25 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
             onReady={() => setSplashDone(true)}
           />
         )}
-        {/* Floating HUD */}
-        {!loading && pool.length > 0 && !finished && (
-          <div className="absolute top-2 right-10 z-20 sm:top-3 sm:right-12"><PlayerHud compact /></div>
-        )}
 
         {loading ? (
-          <div className="py-12 sm:py-16 flex flex-col items-center gap-3">
-            <Loader2 className="h-7 w-7 sm:h-8 sm:w-8 animate-spin text-primary" />
-            <p className="text-xs sm:text-sm text-muted-foreground">جاري تحميل الأسئلة...</p>
+          <div className="py-20 flex flex-col items-center gap-3">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <p className="text-xs text-muted-foreground tracking-widest uppercase">جاري التحميل</p>
           </div>
         ) : pool.length === 0 ? (
-          <div className="py-12 text-center space-y-4">
-            <div className="mx-auto h-16 w-16 rounded-full bg-muted flex items-center justify-center">
-              <X className="h-8 w-8 text-muted-foreground" />
+          <div className="py-16 px-8 text-center space-y-5">
+            <div className="mx-auto h-12 w-12 rounded-full border border-border flex items-center justify-center">
+              <X className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
-              <h3 className="text-lg font-bold">مفيش أسئلة كفاية</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                مفيش أسئلة في فئة "{categoryTitle}" بصعوبة "{config.difficulty}". الأدمن لازم يضيف أسئلة الأول.
+              <p className="kicker mb-2">لا يوجد محتوى</p>
+              <h3 className="text-xl font-serif">مفيش أسئلة كفاية</h3>
+              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                فئة "{categoryTitle}" بصعوبة "{config.difficulty}" لسه فاضية.
               </p>
             </div>
-            <Button onClick={onClose}>تمام</Button>
+            <Button variant="outline" onClick={onClose}>الرجوع</Button>
           </div>
         ) : finished ? (
           <ResultsView
@@ -300,137 +304,146 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
             onClose={onClose}
           />
         ) : current ? (
-          <div className="flex flex-col gap-2 sm:space-y-4">
-            {/* Header: category pills + close */}
-            <div className="flex items-center justify-between gap-2">
-              <button onClick={handleClose} className="text-muted-foreground hover:text-foreground p-1 -m-1" aria-label="إغلاق">
-                <X className="h-5 w-5" />
-              </button>
-              <div className="flex items-center gap-2 flex-wrap justify-end">
-                <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[11px] sm:text-xs font-bold bg-warning/20 text-warning border border-warning/30">
-                  {config.title}
-                </span>
-                <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-secondary/60 text-foreground border border-border/50">
-                  {branchTitle}
-                </span>
-                <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-secondary/60 text-foreground border border-border/50">
-                  {categoryTitle}
-                </span>
-              </div>
-            </div>
-
-            {/* Stats bar: timer left, score + progress right */}
-            <div className="flex items-center justify-between text-xs sm:text-sm">
-              {config.timerSeconds > 0 ? (
-                <div className={cn(
-                  "flex items-center gap-1.5 font-bold text-sm sm:text-base",
-                  timeLeft <= 3 && "text-destructive animate-pulse"
-                )}>
-                  <Timer className="h-4 w-4" />
-                  <span>{timeLeft}s</span>
-                </div>
-              ) : <span />}
-              <div className="flex items-center gap-2.5 sm:gap-4">
-                {config.lives > 0 && (
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: config.lives }).map((_, i) => (
-                      <Heart
-                        key={i}
-                        className={cn("h-4 w-4", i < livesLeft ? "fill-destructive text-destructive" : "text-muted")}
-                      />
-                    ))}
-                  </div>
-                )}
-                <span className="inline-flex items-center gap-1 font-bold text-warning">
-                  <span className="text-lg sm:text-xl">⭐</span>
-                  <span className="text-sm sm:text-base">{score}</span>
-                </span>
-                <span className="font-bold text-sm sm:text-base">
-                  {totalQ > 0 ? `${index + 1} / ${totalQ}` : `${index + 1}`}
-                </span>
-              </div>
-            </div>
-
-            <Progress value={progressPct} className="h-1.5" />
-
-            {/* Centered question + options */}
-            <div
-              className="flex flex-col items-stretch mx-auto w-full mt-3 sm:mt-2"
-              style={{
-                gap: "clamp(0.625rem, 2.5vw, 1rem)",
-                paddingTop: "clamp(0.5rem, 2vw, 1rem)",
-                paddingBottom: "clamp(0.5rem, 2vw, 1rem)",
-                maxWidth: "min(100%, 640px)",
-              }}
-            >
-              <Card className="bg-gradient-to-br from-warning/10 to-warning/5 border-warning/30 border-2">
-                <CardContent style={{ padding: "clamp(0.75rem, 3.5vw, 1.5rem)" }}>
-                  <div className="flex items-center justify-end mb-2">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-warning/20 text-warning">
-                      {current.difficulty === "easy" ? "سهل" : current.difficulty === "hard" ? "صعب" : "متوسط"}
+          <div className="flex flex-col h-full min-h-[100dvh] sm:min-h-0 sm:h-auto">
+            {/* Header */}
+            <div className="px-6 pt-8 sm:pt-6">
+              <div className="flex justify-between items-center mb-5">
+                <button
+                  onClick={handleClose}
+                  className="text-muted-foreground hover:text-foreground transition-colors p-1 -m-1"
+                  aria-label="إغلاق"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+                <div className="flex gap-4 items-center">
+                  {config.timerSeconds > 0 && (
+                    <span className={cn(
+                      "text-xs font-medium tracking-widest tabular-nums",
+                      timeLeft <= 3 ? "text-destructive" : "text-muted-foreground"
+                    )}>
+                      {String(timeLeft).padStart(2, "0")}s
                     </span>
-                  </div>
-                  <h2
-                    className="font-bold leading-relaxed text-center"
-                    style={{ fontSize: "clamp(0.9375rem, 3.8vw, 1.25rem)" }}
-                  >
-                    {current.question}
-                  </h2>
-                </CardContent>
-              </Card>
+                  )}
+                  <span className="text-xs font-medium tracking-widest text-primary tabular-nums">
+                    {String(index + 1).padStart(2, "0")} / {String(totalQ || 0).padStart(2, "0")}
+                  </span>
+                  {config.lives > 0 && (
+                    <div className="flex gap-1">
+                      {Array.from({ length: config.lives }).map((_, i) => (
+                        <div
+                          key={i}
+                          className={cn(
+                            "w-1.5 h-1.5 rounded-full",
+                            i < livesLeft ? "bg-destructive" : "bg-border"
+                          )}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              {/* Thin progress hairline */}
+              <div className="w-full h-px bg-border relative overflow-hidden">
+                <div
+                  className="absolute right-0 top-0 h-full bg-primary transition-all duration-300"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+            </div>
 
-              {/* Options */}
-              <div
-                className="grid grid-cols-1"
-                style={{ gap: "clamp(0.5rem, 1.8vw, 0.625rem)" }}
-              >
+            {/* Question + options */}
+            <div className="px-6 py-8 sm:py-10 flex-1 flex flex-col">
+              <div className="mb-8 sm:mb-10 text-center">
+                <span className="text-[10px] text-muted-foreground uppercase tracking-widest border-b border-border pb-1 font-medium">
+                  {categoryTitle} · {branchTitle}
+                </span>
+                <h2
+                  className="font-serif mt-6 leading-relaxed text-foreground text-center"
+                  style={{ fontSize: "clamp(1.125rem, 4.5vw, 1.5rem)" }}
+                >
+                  {current.question}
+                </h2>
+                <p className="text-[10px] mt-3 tracking-widest uppercase text-muted-foreground">
+                  {current.difficulty === "easy" ? "سهل" : current.difficulty === "hard" ? "صعب" : "متوسط"}
+                </p>
+              </div>
+
+              <div className="space-y-3">
                 {current.options.map((opt, i) => {
                   const isCorrect = i === current.correct_answer;
                   const isSelected = selected === i;
                   const showCorrect = revealed && isCorrect;
                   const showWrong = revealed && isSelected && !isCorrect;
+                  const isEliminated = eliminatedIdx.includes(i);
+                  const isHintDim = hintUsed && !revealed && i !== current.correct_answer && !isEliminated;
                   return (
                     <button
                       key={i}
                       onClick={() => handleAnswer(i)}
-                      disabled={revealed}
-                      style={{
-                        padding: "clamp(0.625rem, 2.6vw, 1rem)",
-                        borderRadius: "clamp(0.5rem, 2vw, 0.75rem)",
-                        fontSize: "clamp(0.8125rem, 3.4vw, 1rem)",
-                      }}
+                      disabled={revealed || isEliminated}
                       className={cn(
-                        "text-center border-2 transition-all flex items-center justify-center gap-2.5 sm:gap-3",
-                        "hover:border-primary/50 hover:bg-primary/5",
-                        !revealed && "border-border bg-card",
-                        showCorrect && "border-success bg-success/10 text-success",
-                        showWrong && "border-destructive bg-destructive/10 text-destructive",
-                        revealed && !isCorrect && !isSelected && "opacity-50",
+                        "w-full text-right rounded-xl border transition-all flex items-center gap-4 group",
+                        "px-5 py-4",
+                        !revealed && !isEliminated && !isHintDim && "border-border bg-card hover:border-primary hover:bg-muted",
+                        showCorrect && "border-primary bg-primary/5 text-foreground",
+                        showWrong && "border-destructive bg-destructive/5 text-destructive",
+                        revealed && !isCorrect && !isSelected && "opacity-40",
+                        isEliminated && "opacity-20 line-through",
+                        isHintDim && "opacity-40",
                       )}
+                      style={{ fontSize: "clamp(0.9375rem, 3.6vw, 1rem)" }}
                     >
-                      <span className="font-medium leading-snug">{opt}</span>
-                      {showCorrect && <Check className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />}
-                      {showWrong && <X className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />}
+                      <span className={cn(
+                        "text-[10px] font-semibold uppercase tracking-wider shrink-0",
+                        showCorrect ? "text-primary" : showWrong ? "text-destructive" : "text-muted-foreground group-hover:text-primary"
+                      )}>
+                        {AR_LETTERS[i] || String.fromCharCode(65 + i)}
+                      </span>
+                      <span className="flex-1">{opt}</span>
+                      {showCorrect && <Check className="h-4 w-4 shrink-0 text-primary" />}
+                      {showWrong && <X className="h-4 w-4 shrink-0 text-destructive" />}
                     </button>
                   );
                 })}
               </div>
+
+              {revealed && config.showExplanation && current.explanation && (
+                <div className="mt-6 pt-6 border-t border-border">
+                  <p className="kicker mb-2">الشرح</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{current.explanation}</p>
+                  <Button onClick={nextQuestion} variant="outline" className="w-full mt-4">
+                    التالي ←
+                  </Button>
+                </div>
+              )}
             </div>
 
-            {/* Explanation + next */}
-            {revealed && config.showExplanation && (
-              <div className="space-y-3">
-                {current.explanation && (
-                  <Card className="bg-muted/50">
-                    <CardContent className="p-4">
-                      <p className="text-sm font-semibold mb-1">📚 الشرح:</p>
-                      <p className="text-sm text-muted-foreground">{current.explanation}</p>
-                    </CardContent>
-                  </Card>
-                )}
-                <Button onClick={nextQuestion} className="w-full">
-                  السؤال اللي بعده ←
-                </Button>
+            {/* Power-up bar */}
+            {!finished && (
+              <div className="mt-auto px-6 py-5 bg-muted/40 border-t border-border">
+                <div className="flex justify-between items-center gap-3">
+                  <PowerButton
+                    icon={Scissors}
+                    label="حذف إجابتين"
+                    count={powerCounts.eliminate}
+                    disabled={revealed || eliminatedIdx.length > 0}
+                    onClick={usePowerEliminate}
+                  />
+                  <PowerButton
+                    icon={Lightbulb}
+                    label="تلميح"
+                    count={powerCounts.hint}
+                    disabled={revealed || hintUsed}
+                    onClick={usePowerHint}
+                  />
+                  <PowerButton
+                    icon={ChevronsLeft}
+                    label="تخطي السؤال"
+                    count={powerCounts.skip}
+                    disabled={revealed}
+                    onClick={usePowerSkip}
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -440,39 +453,63 @@ export const QuizPlayer = ({ open, onClose, modeId, categoryId, categoryTitle, b
   );
 };
 
+const PowerButton = ({
+  icon: Icon, label, count, disabled, onClick,
+}: {
+  icon: typeof Scissors; label: string; count: number; disabled: boolean; onClick: () => void;
+}) => (
+  <button
+    onClick={onClick}
+    disabled={disabled || count <= 0}
+    className={cn(
+      "flex-1 py-3 px-2 flex flex-col items-center gap-1.5 border border-border rounded-xl bg-card transition-colors",
+      "hover:border-primary hover:bg-muted",
+      "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-border disabled:hover:bg-card"
+    )}
+  >
+    <div className="relative">
+      <Icon className="h-4 w-4 text-foreground" />
+      {count > 0 && (
+        <span className="absolute -top-2 -right-3 text-[9px] font-semibold text-primary tabular-nums">
+          {count}
+        </span>
+      )}
+    </div>
+    <span className="text-[11px] text-foreground font-medium leading-none">{label}</span>
+  </button>
+);
+
 const ResultsView = ({ score, correct, total, modeTitle, onClose }: {
   score: number; correct: number; total: number; modeTitle: string; onClose: () => void;
 }) => {
   const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
-  const emoji = pct >= 80 ? "🏆" : pct >= 50 ? "👏" : "💪";
-  const message = pct >= 80 ? "أداء أسطوري!" : pct >= 50 ? "كويس جداً، استمر!" : "حاول تاني، هتطلع أحسن!";
+  const message = pct >= 80 ? "أداء أسطوري" : pct >= 50 ? "أداء جيد" : "استمر في المحاولة";
 
   return (
-    <div className="py-6 sm:py-8 text-center space-y-4 sm:space-y-5">
-      <div className="text-[52px] sm:text-6xl leading-none">{emoji}</div>
+    <div className="py-14 px-8 text-center space-y-8">
       <div>
-        <h2 className="text-xl sm:text-2xl font-extrabold">{message}</h2>
-        <p className="text-sm text-muted-foreground mt-1">{modeTitle}</p>
+        <p className="kicker mb-3">النتيجة</p>
+        <h2 className="text-3xl font-serif text-foreground">{message}</h2>
+        <p className="text-xs text-muted-foreground mt-2 tracking-widest uppercase">{modeTitle}</p>
       </div>
-      <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-md mx-auto">
-        <Card><CardContent className="p-3 sm:p-4">
-          <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-primary mx-auto mb-1" />
-          <div className="text-lg sm:text-2xl font-extrabold">{score}</div>
-          <div className="text-[11px] text-muted-foreground">النقاط</div>
-        </CardContent></Card>
-        <Card><CardContent className="p-3 sm:p-4">
-          <Check className="h-4 w-4 sm:h-5 sm:w-5 text-success mx-auto mb-1" />
-          <div className="text-lg sm:text-2xl font-extrabold">{correct}/{total}</div>
-          <div className="text-[11px] text-muted-foreground">صح</div>
-        </CardContent></Card>
-        <Card><CardContent className="p-3 sm:p-4">
-          <div className="text-primary text-base sm:text-lg font-bold mx-auto mb-1">%</div>
-          <div className="text-lg sm:text-2xl font-extrabold">{pct}%</div>
-          <div className="text-[11px] text-muted-foreground">دقة</div>
-        </CardContent></Card>
+
+      <div className="grid grid-cols-3 gap-0 max-w-sm mx-auto border-y border-border py-6">
+        <div className="border-l border-border">
+          <p className="kicker mb-2">النقاط</p>
+          <p className="text-2xl font-serif tabular-nums">{score}</p>
+        </div>
+        <div className="border-l border-border">
+          <p className="kicker mb-2">صح</p>
+          <p className="text-2xl font-serif tabular-nums">{correct}<span className="text-muted-foreground text-lg">/{total}</span></p>
+        </div>
+        <div>
+          <p className="kicker mb-2">الدقة</p>
+          <p className="text-2xl font-serif tabular-nums">{pct}<span className="text-muted-foreground text-lg">%</span></p>
+        </div>
       </div>
-      <Button onClick={onClose} className="w-full max-w-xs">
-        <RotateCw className="h-4 w-4" /> العب تاني
+
+      <Button onClick={onClose} variant="outline" className="min-w-[180px]">
+        <RotateCw className="h-4 w-4" /> الرجوع
       </Button>
     </div>
   );
